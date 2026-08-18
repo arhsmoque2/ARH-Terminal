@@ -263,11 +263,13 @@ internal class QueueSidecarResumableUploader(
                 } catch (cancelled: CancellationException) {
                     applyCheckpointAction(paths, ResumableUploadFailureKind.Cancellation)
                     throw cancelled
+                } catch (error: SshException) {
+                    applyCheckpointAction(paths, ResumableUploadFailureKind.RetryableTransport)
+                    throw error
                 } catch (error: Throwable) {
                     // Both a transport loss and the uploader's bounded
                     // no-progress timeout preserve the committed checkpoint.
                     applyCheckpointAction(paths, ResumableUploadFailureKind.RetryableTransport)
-                    if (error is SshException) throw error
                     throw SshException(
                         "Queue-sidecar upload of ${request.displayName} failed: ${error.message}",
                         error,

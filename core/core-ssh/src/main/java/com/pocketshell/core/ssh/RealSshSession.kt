@@ -883,7 +883,7 @@ internal class RealSshSession(
     private fun awaitExecDrain(future: Future<String>): String =
         try {
             future.get()
-        } catch (e: ExecutionException) {
+        } catch (@Suppress("SwallowedException") e: ExecutionException) {
             val cause = e.cause
             when (cause) {
                 is SshException -> throw cause
@@ -953,7 +953,7 @@ internal class RealSshSession(
                 ) {
                     read(buffer)
                 }
-            } catch (stall: ExecReadStallSignal) {
+            } catch (@Suppress("SwallowedException") stall: ExecReadStallSignal) {
                 // No byte on THIS stream for the window. As long as SOME stream
                 // made progress within the window the exec is still alive — re-arm
                 // and keep waiting. Only when NEITHER stream progressed for the
@@ -1573,13 +1573,11 @@ internal class RealSshSession(
             // it — detach the temp cleanup onto the session scope.
             cleanupTempDetached(tempRemotePath)
             throw e
-        } catch (t: Throwable) {
-            // ANY failure leaves the real path untouched; remove the temp file
-            // SYNCHRONOUSLY (the context is still active on this path) so a
-            // partial upload never accumulates as a stray artifact and the
-            // removal is observable by the time we return to the caller.
+        } catch (e: SshException) {
             cleanupTempBestEffort(tempRemotePath)
-            if (t is SshException) throw t
+            throw e
+        } catch (t: Throwable) {
+            cleanupTempBestEffort(tempRemotePath)
             throw SshException("Upload of $name to $remotePath failed: ${t.message}", t)
         }
     }

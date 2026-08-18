@@ -3,11 +3,12 @@ package com.arh.terminal.ui.session
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.arh.terminal.ui.conversation.AgentTurn
-import com.pocketshell.core.agents.AgentKind
 import com.pocketshell.core.agents.ClaudeCodeParser
 import com.pocketshell.core.agents.ConversationEvent
 import com.pocketshell.core.agents.ConversationRole
+import com.pocketshell.core.ssh.KnownHostsPolicy
 import com.pocketshell.core.ssh.SshConnection
+import com.pocketshell.core.ssh.SshKey
 import com.pocketshell.core.tmux.TmuxClient
 import com.pocketshell.core.tmux.TmuxClientFactory
 import com.pocketshell.core.tmux.protocol.ControlEvent
@@ -38,17 +39,19 @@ class SessionViewModel @Inject constructor(
     fun updatePort(port: Int) = _uiState.update { it.copy(port = port) }
     fun setViewMode(mode: ViewMode) = _uiState.update { it.copy(viewMode = mode) }
 
-    fun connect(password: String = "") {
+    fun connect(privateKeyPem: String = "") {
         val currentState = _uiState.value
         _uiState.update { it.copy(connectionStatus = ConnectionStatus.Connecting("Opening SSH to ${currentState.host}...")) }
 
         viewModelScope.launch(Dispatchers.IO) {
             try {
+                val key = SshKey.Pem(privateKeyPem.ifBlank { "-----BEGIN OPENSSH PRIVATE KEY-----\n..." })
                 val sshResult = SshConnection.connect(
                     host = currentState.host,
                     port = currentState.port,
-                    username = currentState.username,
-                    password = password
+                    user = currentState.username,
+                    key = key,
+                    knownHosts = KnownHostsPolicy.AcceptAll
                 )
 
                 if (sshResult.isFailure) {
@@ -88,7 +91,7 @@ class SessionViewModel @Inject constructor(
     private fun handleControlEvent(event: ControlEvent) {
         when (event) {
             is ControlEvent.SessionChanged -> {
-                _uiState.update { it.copy(activeSessionName = event.sessionName) }
+                _uiState.update { it.copy(activeSessionName = event.name) }
             }
             is ControlEvent.WindowAdd -> {
                 val pane = PaneData(
@@ -115,8 +118,8 @@ class SessionViewModel @Inject constructor(
     private fun listenToPaneOutput(paneId: String) {
         val client = activeTmuxClient ?: return
         viewModelScope.launch(Dispatchers.IO) {
-            client.outputFor(paneId).collect { bytes ->
-                val text = String(bytes, StandardCharsets.UTF_8)
+            client.outputFor(paneId).collect { outputEvent ->
+                val text = String(outputEvent.data, StandardCharsets.UTF_8)
                 val turns = parseOutputTurns(text)
 
                 _uiState.update { state ->
@@ -140,16 +143,17 @@ class SessionViewModel @Inject constructor(
         for (line in lines) {
             val events = claudeParser.parseLine(line)
             for (evt in events) {
+                val time = evt.atMillis ?: System.currentTimeMillis()
                 when (evt) {
                     is ConversationEvent.Message -> {
                         if (evt.role == ConversationRole.User) {
-                            turns.add(AgentTurn.UserMessage(evt.id, evt.timestampMillis, evt.text))
+                            turns.add(AgentTurn.UserMessage(evt.id, time, evt.text))
                         } else {
-                            turns.add(AgentTurn.AssistantMessage(evt.id, evt.timestampMillis, evt.agent, evt.text))
+                            turns.add(AgentTurn.AssistantMessage(evt.id, time, evt.agent, evt.text))
                         }
                     }
                     is ConversationEvent.ToolCall -> {
-                        turns.add(AgentTurn.ToolInvocation(evt.id, evt.timestampMillis, evt.toolName, evt.arguments))
+                        turns.add(AgentTurn.ToolInvocation(evt.id, time, evt.name, evt.input))
                     }
                     is ConversationEvent.ToolResult -> {
                         val lastIdx = turns.indexOfLast { it is AgentTurn.ToolInvocation }

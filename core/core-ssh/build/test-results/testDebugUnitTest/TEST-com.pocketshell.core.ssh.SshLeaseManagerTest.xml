@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.pocketshell.core.ssh.SshLeaseManagerTest" tests="39" skipped="0" failures="0" errors="0" timestamp="2026-08-18T13:44:57.333Z" hostname="ARH-G4" time="0.096">
+  <properties/>
+  <testcase name="state events include idle expiry and lifecycle close reasons" classname="com.pocketshell.core.ssh.SshLeaseManagerTest" time="0.006"/>
+  <testcase name="release from replaced disconnected lease does not mutate active replacement" classname="com.pocketshell.core.ssh.SshLeaseManagerTest" time="0.002"/>
+  <testcase name="awaiter receives the shared connect failure instead of serially retrying" classname="com.pocketshell.core.ssh.SshLeaseManagerTest" time="0.004"/>
+  <testcase name="evict idle closes connected retained lease so next acquire opens fresh session" classname="com.pocketshell.core.ssh.SshLeaseManagerTest" time="0.002"/>
+  <testcase name="hasLiveLease is false for a transport that dropped while pooled" classname="com.pocketshell.core.ssh.SshLeaseManagerTest" time="0.001"/>
+  <testcase name="a genuine (non-keepalive) dead session stays Disconnected, not KeepaliveDead" classname="com.pocketshell.core.ssh.SshLeaseManagerTest" time="0.002"/>
+  <testcase name="concurrent acquires for the same key coalesce into one connect" classname="com.pocketshell.core.ssh.SshLeaseManagerTest" time="0.002"/>
+  <testcase name="WEDGE - a poisoned half-open idle lease that lies about isConnected is REUSED on reacquire" classname="com.pocketshell.core.ssh.SshLeaseManagerTest" time="0.002"/>
+  <testcase name="evict idle releases the transport once no consumer holds it" classname="com.pocketshell.core.ssh.SshLeaseManagerTest" time="0.002"/>
+  <testcase name="closing manager closes retained sessions and rejects new acquires" classname="com.pocketshell.core.ssh.SshLeaseManagerTest" time="0.003"/>
+  <testcase name="active lease released after process stop closes without idle ttl" classname="com.pocketshell.core.ssh.SshLeaseManagerTest" time="0.002"/>
+  <testcase name="proven-dead invalidation closes the exact active lease and next acquire is fresh" classname="com.pocketshell.core.ssh.SshLeaseManagerTest" time="0.002"/>
+  <testcase name="release to idle then reacquire of the still-up transport emits no extra Connected edge - #845" classname="com.pocketshell.core.ssh.SshLeaseManagerTest" time="0.004"/>
+  <testcase name="explicit disconnect closes host once and stale release is ignored" classname="com.pocketshell.core.ssh.SshLeaseManagerTest" time="0.002"/>
+  <testcase name="evict idle ignores active lease" classname="com.pocketshell.core.ssh.SshLeaseManagerTest" time="0.001"/>
+  <testcase name="active lease is not closed by another holder release or ttl" classname="com.pocketshell.core.ssh.SshLeaseManagerTest" time="0.002"/>
+  <testcase name="evict idle leaves a transport a second active holder still owns" classname="com.pocketshell.core.ssh.SshLeaseManagerTest" time="0.001"/>
+  <testcase name="hasLiveLease reflects active idle and closed transports without mutating the pool" classname="com.pocketshell.core.ssh.SshLeaseManagerTest" time="0.003"/>
+  <testcase name="closing manager emits Closed for optimistic Connecting key" classname="com.pocketshell.core.ssh.SshLeaseManagerTest" time="0.004"/>
+  <testcase name="different credential ids do not share a host connection" classname="com.pocketshell.core.ssh.SshLeaseManagerTest" time="0.003"/>
+  <testcase name="hasLiveOrConnectingLease is true while a connect is in flight and emits Connecting" classname="com.pocketshell.core.ssh.SshLeaseManagerTest" time="0.004"/>
+  <testcase name="failed in-flight connect retracts the connecting hint" classname="com.pocketshell.core.ssh.SshLeaseManagerTest" time="0.004"/>
+  <testcase name="a real reconnect after a Closed drop re-emits Connected (the heal up-edge survives dedupe) - #845" classname="com.pocketshell.core.ssh.SshLeaseManagerTest" time="0.004"/>
+  <testcase name="released idle session closes after ttl" classname="com.pocketshell.core.ssh.SshLeaseManagerTest" time="0.002"/>
+  <testcase name="idle cap closes oldest released session" classname="com.pocketshell.core.ssh.SshLeaseManagerTest" time="0.002"/>
+  <testcase name="disconnected idle entry is replaced on next acquire" classname="com.pocketshell.core.ssh.SshLeaseManagerTest" time="0.001"/>
+  <testcase name="same host and credentials reuse a live leased session" classname="com.pocketshell.core.ssh.SshLeaseManagerTest" time="0.002"/>
+  <testcase name="AC2 - keepalive-dead attribution reaches the edge even when released inside the close window" classname="com.pocketshell.core.ssh.SshLeaseManagerTest" time="0.002"/>
+  <testcase name="process start restores warm ttl behavior" classname="com.pocketshell.core.ssh.SshLeaseManagerTest" time="0.002"/>
+  <testcase name="AC1 - release during the async-close window removes the entry instead of parking it warm" classname="com.pocketshell.core.ssh.SshLeaseManagerTest" time="0.002"/>
+  <testcase name="release completes ref count update when caller is cancelled" classname="com.pocketshell.core.ssh.SshLeaseManagerTest" time="0.002"/>
+  <testcase name="late proven-dead invalidation cannot close a newer replacement" classname="com.pocketshell.core.ssh.SshLeaseManagerTest" time="0.002"/>
+  <testcase name="a keepalive-dead held session is stamped KeepaliveDead, not anonymous Disconnected" classname="com.pocketshell.core.ssh.SshLeaseManagerTest" time="0.002"/>
+  <testcase name="default idle ttl keeps released lease warm for sixty seconds" classname="com.pocketshell.core.ssh.SshLeaseManagerTest" time="0.002"/>
+  <testcase name="process stop closes all idle warm hosts" classname="com.pocketshell.core.ssh.SshLeaseManagerTest" time="0.002"/>
+  <testcase name="reacquire before ttl cancels idle close" classname="com.pocketshell.core.ssh.SshLeaseManagerTest" time="0.002"/>
+  <testcase name="AC3 - a concurrent same-host acquire during the close window dials FRESH, not the corpse" classname="com.pocketshell.core.ssh.SshLeaseManagerTest" time="0.002"/>
+  <testcase name="FIX - force-fresh evicts the poisoned half-open idle lease then re-dials a FRESH transport" classname="com.pocketshell.core.ssh.SshLeaseManagerTest" time="0.001"/>
+  <testcase name="reusing one live lease many times emits exactly one Connected edge (no transport-up storm) - #845" classname="com.pocketshell.core.ssh.SshLeaseManagerTest" time="0.003"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1677,6 +1677,7 @@ internal class RealTmuxClient(
                 // A genuinely wedged write is still covered: the transport dispatcher's
                 // per-op wall-clock ceiling fails it with a NON-cancellation
                 // `TransportOpTimeoutException`, which still closes here.
+                @Suppress("InstanceOfCheckForException")
                 if (t is CancellationException && !currentCoroutineContext().isActive) {
                     Log.w(
                         ISSUE_244_DIAG_TAG,
@@ -2440,6 +2441,7 @@ internal class RealTmuxClient(
          * heap.
          */
         private const val EVENT_BUFFER = 256
+        @Suppress("UnusedPrivateProperty")
         private const val OUTPUT_BACKLOG_EVENTS = 4096
 
         /**

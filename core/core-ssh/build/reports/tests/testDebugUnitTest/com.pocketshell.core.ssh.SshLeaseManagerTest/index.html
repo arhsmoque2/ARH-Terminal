@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta http-equiv="x-ua-compatible" content="IE=edge"/>
+<title>Test results - com.pocketshell.core.ssh.SshLeaseManagerTest</title>
+<link href="../css/base-style.css" rel="stylesheet" type="text/css"/>
+<link href="../css/style.css" rel="stylesheet" type="text/css"/>
+<script src="../js/report.js" type="text/javascript"></script>
+</head>
+<body>
+<div id="content">
+<div class="breadcrumbs">
+<a class="breadcrumb" href="../index.html">all</a> &gt; 
+<span class="breadcrumb">com.pocketshell.core.ssh.SshLeaseManagerTest</span>
+</div>
+<div class="tab-container">
+<ul class="tabLinks">
+<li>
+<a class="successGroup" href="#">Gradle Test Run :core:core-ssh:testDebugUnitTest</a>
+</li>
+</ul>
+<div class="tab">
+<h2>Gradle Test Run :core:core-ssh:testDebugUnitTest</h2>
+<h1>SshLeaseManagerTest</h1>
+<div class="tab-container">
+<ul class="tabLinks">
+<li>
+<a class="" href="#">summary</a>
+</li>
+</ul>
+<div class="tab">
+<h2>summary</h2>
+<div>
+<div class="summary">
+<table>
+<tr>
+<td>
+<div class="summaryGroup">
+<table>
+<tr>
+<td>
+<div class="infoBox">
+<div class="counter">39</div>
+<p>tests</p>
+</div>
+</td>
+<td>
+<div class="infoBox">
+<div class="counter">0</div>
+<p>failures</p>
+</div>
+</td>
+<td>
+<div class="infoBox">
+<div class="counter">0</div>
+<p>skipped</p>
+</div>
+</td>
+<td>
+<div class="infoBox duration">
+<div class="counter">0.096s</div>
+<p>duration</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</td>
+<td>
+<div class="infoBox success successRate">
+<div class="percent">100%</div>
+<p>successful</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<table class="test-results">
+<thead>
+<tr>
+<th>Child</th>
+<th hidden="">Name</th>
+<th>Tests</th>
+<th>Failures</th>
+<th>Skipped</th>
+<th>Duration</th>
+<th>Success rate</th>
+</tr>
+</thead>
+<tr>
+<td class="success">a genuine (non-keepalive) dead session stays Disconnected, not KeepaliveDead</td>
+<td class="path" hidden="">a genuine (non-keepalive) dead session stays Disconnected, not KeepaliveDead</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0.002s</td>
+<td class="success">100%</td>
+</tr>
+<tr>
+<td class="success">a keepalive-dead held session is stamped KeepaliveDead, not anonymous Disconnected</td>
+<td class="path" hidden="">a keepalive-dead held session is stamped KeepaliveDead, not anonymous Disconnected</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0.002s</td>
+<td class="success">100%</td>
+</tr>
+<tr>
+<td class="success">a real reconnect after a Closed drop re-emits Connected (the heal up-edge survives dedupe) - #845</td>
+<td class="path" hidden="">a real reconnect after a Closed drop re-emits Connected (the heal up-edge survives dedupe) - #845</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0.004s</td>
+<td class="success">100%</td>
+</tr>
+<tr>
+<td class="success">AC1 - release during the async-close window removes the entry instead of parking it warm</td>
+<td class="path" hidden="">AC1 - release during the async-close window removes the entry instead of parking it warm</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0.002s</td>
+<td class="success">100%</td>
+</tr>
+<tr>
+<td class="success">AC2 - keepalive-dead attribution reaches the edge even when released inside the close window</td>
+<td class="path" hidden="">AC2 - keepalive-dead attribution reaches the edge even when released inside the close window</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0.002s</td>
+<td class="success">100%</td>
+</tr>
+<tr>
+<td class="success">AC3 - a concurrent same-host acquire during the close window dials FRESH, not the corpse</td>
+<td class="path" hidden="">AC3 - a concurrent same-host acquire during the close window dials FRESH, not the corpse</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0.002s</td>
+<td class="success">100%</td>
+</tr>
+<tr>
+<td class="success">active lease is not closed by another holder release or ttl</td>
+<td class="path" hidden="">active lease is not closed by another holder release or ttl</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0.002s</td>
+<td class="success">100%</td>
+</tr>
+<tr>
+<td class="success">active lease released after process stop closes without idle ttl</td>
+<td class="path" hidden="">active lease released after process stop closes without idle ttl</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0.002s</td>
+<td class="success">100%</td>
+</tr>
+<tr>
+<td class="success">awaiter receives the shared connect failure instead of serially retrying</td>
+<td class="path" hidden="">awaiter receives the shared connect failure instead of serially retrying</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0.004s</td>
+<td class="success">100%</td>
+</tr>
+<tr>
+<td class="success">closing manager closes retained sessions and rejects new acquires</td>
+<td class="path" hidden="">closing manager closes retained sessions and rejects new acquires</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0.003s</td>
+<td class="success">100%</td>
+</tr>
+<tr>
+<td class="success">closing manager emits Closed for optimistic Connecting key</td>
+<td class="path" hidden="">closing manager emits Closed for optimistic Connecting key</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0.004s</td>
+<td class="success">100%</td>
+</tr>
+<tr>
+<td class="success">concurrent acquires for the same key coalesce into one connect</td>
+<td class="path" hidden="">concurrent acquires for the same key coalesce into one connect</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0.002s</td>
+<td class="success">100%</td>
+</tr>
+<tr>
+<td class="success">default idle ttl keeps released lease warm for sixty seconds</td>
+<td class="path" hidden="">default idle ttl keeps released lease warm for sixty seconds</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0.002s</td>
+<td class="success">100%</td>
+</tr>
+<tr>
+<td class="success">different credential ids do not share a host connection</td>
+<td class="path" hidden="">different credential ids do not share a host connection</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0.003s</td>
+<td class="success">100%</td>
+</tr>
+<tr>
+<td class="success">disconnected idle entry is replaced on next acquire</td>
+<td class="path" hidden="">disconnected idle entry is replaced on next acquire</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0.001s</td>
+<td class="success">100%</td>
+</tr>
+<tr>
+<td class="success">evict idle closes connected retained lease so next acquire opens fresh session</td>
+<td class="path" hidden="">evict idle closes connected retained lease so next acquire opens fresh session</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0.002s</td>
+<td class="success">100%</td>
+</tr>
+<tr>
+<td class="success">evict idle ignores active lease</td>
+<td class="path" hidden="">evict idle ignores active lease</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0.001s</td>
+<td class="success">100%</td>
+</tr>
+<tr>
+<td class="success">evict idle leaves a transport a second active holder still owns</td>
+<td class="path" hidden="">evict idle leaves a transport a second active holder still owns</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0.001s</td>
+<td class="success">100%</td>
+</tr>
+<tr>
+<td class="success">evict idle releases the transport once no consumer holds it</td>
+<td class="path" hidden="">evict idle releases the transport once no consumer holds it</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0.002s</td>
+<td class="success">100%</td>
+</tr>
+<tr>
+<td class="success">explicit disconnect closes host once and stale release is ignored</td>
+<td class="path" hidden="">explicit disconnect closes host once and stale release is ignored</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0.002s</td>
+<td class="success">100%</td>
+</tr>
+<tr>
+<td class="success">failed in-flight connect retracts the connecting hint</td>
+<td class="path" hidden="">failed in-flight connect retracts the connecting hint</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0.004s</td>
+<td class="success">100%</td>
+</tr>
+<tr>
+<td class="success">FIX - force-fresh evicts the poisoned half-open idle lease then re-dials a FRESH transport</td>
+<td class="path" hidden="">FIX - force-fresh evicts the poisoned half-open idle lease then re-dials a FRESH transport</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0.001s</td>
+<td class="success">100%</td>
+</tr>
+<tr>
+<td class="success">hasLiveLease is false for a transport that dropped while pooled</td>
+<td class="path" hidden="">hasLiveLease is false for a transport that dropped while pooled</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0.001s</td>
+<td class="success">100%</td>
+</tr>
+<tr>
+<td class="success">hasLiveLease reflects active idle and closed transports without mutating the pool</td>
+<td class="path" hidden="">hasLiveLease reflects active idle and closed transports without mutating the pool</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0.003s</td>
+<td class="success">100%</td>
+</tr>
+<tr>
+<td class="success">hasLiveOrConnectingLease is true while a connect is in flight and emits Connecting</td>
+<td class="path" hidden="">hasLiveOrConnectingLease is true while a connect is in flight and emits Connecting</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0.004s</td>
+<td class="success">100%</td>
+</tr>
+<tr>
+<td class="success">idle cap closes oldest released session</td>
+<td class="path" hidden="">idle cap closes oldest released session</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0.002s</td>
+<td class="success">100%</td>
+</tr>
+<tr>
+<td class="success">late proven-dead invalidation cannot close a newer replacement</td>
+<td class="path" hidden="">late proven-dead invalidation cannot close a newer replacement</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0.002s</td>
+<td class="success">100%</td>
+</tr>
+<tr>
+<td class="success">process start restores warm ttl behavior</td>
+<td class="path" hidden="">process start restores warm ttl behavior</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0.002s</td>
+<td class="success">100%</td>
+</tr>
+<tr>
+<td class="success">process stop closes all idle warm hosts</td>
+<td class="path" hidden="">process stop closes all idle warm hosts</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0.002s</td>
+<td class="success">100%</td>
+</tr>
+<tr>
+<td class="success">proven-dead invalidation closes the exact active lease and next acquire is fresh</td>
+<td class="path" hidden="">proven-dead invalidation closes the exact active lease and next acquire is fresh</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0.002s</td>
+<td class="success">100%</td>
+</tr>
+<tr>
+<td class="success">reacquire before ttl cancels idle close</td>
+<td class="path" hidden="">reacquire before ttl cancels idle close</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0.002s</td>
+<td class="success">100%</td>
+</tr>
+<tr>
+<td class="success">release completes ref count update when caller is cancelled</td>
+<td class="path" hidden="">release completes ref count update when caller is cancelled</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0.002s</td>
+<td class="success">100%</td>
+</tr>
+<tr>
+<td class="success">release from replaced disconnected lease does not mutate active replacement</td>
+<td class="path" hidden="">release from replaced disconnected lease does not mutate active replacement</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0.002s</td>
+<td class="success">100%</td>
+</tr>
+<tr>
+<td class="success">release to idle then reacquire of the still-up transport emits no extra Connected edge - #845</td>
+<td class="path" hidden="">release to idle then reacquire of the still-up transport emits no extra Connected edge - #845</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0.004s</td>
+<td class="success">100%</td>
+</tr>
+<tr>
+<td class="success">released idle session closes after ttl</td>
+<td class="path" hidden="">released idle session closes after ttl</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0.002s</td>
+<td class="success">100%</td>
+</tr>
+<tr>
+<td class="success">reusing one live lease many times emits exactly one Connected edge (no transport-up storm) - #845</td>
+<td class="path" hidden="">reusing one live lease many times emits exactly one Connected edge (no transport-up storm) - #845</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0.003s</td>
+<td class="success">100%</td>
+</tr>
+<tr>
+<td class="success">same host and credentials reuse a live leased session</td>
+<td class="path" hidden="">same host and credentials reuse a live leased session</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0.002s</td>
+<td class="success">100%</td>
+</tr>
+<tr>
+<td class="success">state events include idle expiry and lifecycle close reasons</td>
+<td class="path" hidden="">state events include idle expiry and lifecycle close reasons</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0.006s</td>
+<td class="success">100%</td>
+</tr>
+<tr>
+<td class="success">WEDGE - a poisoned half-open idle lease that lies about isConnected is REUSED on reacquire</td>
+<td class="path" hidden="">WEDGE - a poisoned half-open idle lease that lies about isConnected is REUSED on reacquire</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0.002s</td>
+<td class="success">100%</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="footer">
+<p>
+<div>
+<label class="hidden" id="label-for-line-wrapping-toggle" for="line-wrapping-toggle">Wrap lines
+<input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
+</label>
+</div>Generated by 
+<a href="https://www.gradle.org">Gradle 9.4.0</a> at 18 Aug 2026, 9:45:00 pm</p>
+</div>
+</div>
+</body>
+</html>

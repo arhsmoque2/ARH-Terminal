@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.pocketshell.core.ssh.RealSshSessionTailScopeLeakTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-08-18T13:44:50.235Z" hostname="ARH-G4" time="0.063">
+  <properties/>
+  <testcase name="a genuine-bug tail exception never poisons a subsequent sibling runTest" classname="com.pocketshell.core.ssh.RealSshSessionTailScopeLeakTest" time="0.063"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

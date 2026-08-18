@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.pocketshell.core.ssh.ShellQuotingTest" tests="13" skipped="0" failures="0" errors="0" timestamp="2026-08-18T13:44:57.180Z" hostname="ARH-G4" time="0.001">
+  <properties/>
+  <testcase name="wrapsAPlainValueInSingleQuotes" classname="com.pocketshell.core.ssh.ShellQuotingTest" time="0.0"/>
+  <testcase name="absolutePathIsFullySingleQuoted" classname="com.pocketshell.core.ssh.ShellQuotingTest" time="0.0"/>
+  <testcase name="neutralisesACommandInjectionAttemptIntoOneInertToken" classname="com.pocketshell.core.ssh.ShellQuotingTest" time="0.0"/>
+  <testcase name="handlesAnEmptyValue" classname="com.pocketshell.core.ssh.ShellQuotingTest" time="0.0"/>
+  <testcase name="namedTildeIsQuotedLiterallyNotExpanded" classname="com.pocketshell.core.ssh.ShellQuotingTest" time="0.0"/>
+  <testcase name="midWordTildeIsQuotedLiterally" classname="com.pocketshell.core.ssh.ShellQuotingTest" time="0.0"/>
+  <testcase name="wrapsAnAbsolutePathUnchangedApartFromTheQuotes" classname="com.pocketshell.core.ssh.ShellQuotingTest" time="0.0"/>
+  <testcase name="bareTildeIsLeftUnquotedSoTheShellExpandsItToHome" classname="com.pocketshell.core.ssh.ShellQuotingTest" time="0.0"/>
+  <testcase name="tildeSlashRemainderWithAnEmbeddedSingleQuoteIsEscaped" classname="com.pocketshell.core.ssh.ShellQuotingTest" time="0.0"/>
+  <testcase name="escapesAnEmbeddedSingleQuoteAsCloseEscapeReopen" classname="com.pocketshell.core.ssh.ShellQuotingTest" time="0.0"/>
+  <testcase name="tildeSlashWithEmptyRemainderStaysExpandable" classname="com.pocketshell.core.ssh.ShellQuotingTest" time="0.0"/>
+  <testcase name="tildeSlashPrefixExpandsButTheRemainderIsQuoted" classname="com.pocketshell.core.ssh.ShellQuotingTest" time="0.0"/>
+  <testcase name="escapesShellMetacharactersByQuotingNotByRewriting" classname="com.pocketshell.core.ssh.ShellQuotingTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

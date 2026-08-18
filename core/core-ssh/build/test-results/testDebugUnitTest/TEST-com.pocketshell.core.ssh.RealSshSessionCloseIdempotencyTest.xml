@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.pocketshell.core.ssh.RealSshSessionCloseIdempotencyTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-08-18T13:44:46.373Z" hostname="ARH-G4" time="0.03">
+  <properties/>
+  <testcase name="close swallows TransportException with BY_APPLICATION disconnect reason" classname="com.pocketshell.core.ssh.RealSshSessionCloseIdempotencyTest" time="0.009"/>
+  <testcase name="close swallows ConnectionException raised during disconnect" classname="com.pocketshell.core.ssh.RealSshSessionCloseIdempotencyTest" time="0.004"/>
+  <testcase name="close while transport already disconnected propagates no exception" classname="com.pocketshell.core.ssh.RealSshSessionCloseIdempotencyTest" time="0.006"/>
+  <testcase name="close swallows TransportException with a non-BY_APPLICATION reason" classname="com.pocketshell.core.ssh.RealSshSessionCloseIdempotencyTest" time="0.003"/>
+  <testcase name="close swallows raw IOException raised during disconnect" classname="com.pocketshell.core.ssh.RealSshSessionCloseIdempotencyTest" time="0.004"/>
+  <testcase name="close swallows TransportException whose chained cause uses BY_APPLICATION" classname="com.pocketshell.core.ssh.RealSshSessionCloseIdempotencyTest" time="0.001"/>
+  <testcase name="close is idempotent under repeated invocation" classname="com.pocketshell.core.ssh.RealSshSessionCloseIdempotencyTest" time="0.003"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

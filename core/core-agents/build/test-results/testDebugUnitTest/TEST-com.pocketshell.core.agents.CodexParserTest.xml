@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.pocketshell.core.agents.CodexParserTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-08-18T13:42:56.178Z" hostname="ARH-G4" time="0.021">
+  <properties/>
+  <testcase name="parsesResponseMessageItem" classname="com.pocketshell.core.agents.CodexParserTest" time="0.007"/>
+  <testcase name="collapsesAgentsMdInstructionsResponseItemUserMessage" classname="com.pocketshell.core.agents.CodexParserTest" time="0.005"/>
+  <testcase name="preambleWithoutInstructionsBlockIsNotCollapsed" classname="com.pocketshell.core.agents.CodexParserTest" time="0.001"/>
+  <testcase name="parsesIsoTimestampFromEnvelope" classname="com.pocketshell.core.agents.CodexParserTest" time="0.001"/>
+  <testcase name="collapsesAgentsMdInstructionsUserMessageToSystemNote" classname="com.pocketshell.core.agents.CodexParserTest" time="0.001"/>
+  <testcase name="parsesPayloadWrappedUserAndAgentMessages" classname="com.pocketshell.core.agents.CodexParserTest" time="0.0"/>
+  <testcase name="parsesFunctionCallAndOutput" classname="com.pocketshell.core.agents.CodexParserTest" time="0.002"/>
+  <testcase name="assistantInstructionsMessageIsNotCollapsed" classname="com.pocketshell.core.agents.CodexParserTest" time="0.001"/>
+  <testcase name="userMessageStartingWithInstructionsTagIsNotCollapsed" classname="com.pocketshell.core.agents.CodexParserTest" time="0.0"/>
+  <testcase name="parsesPayloadWrappedResponseItems" classname="com.pocketshell.core.agents.CodexParserTest" time="0.0"/>
+  <testcase name="genuineFirstUserPromptIsNotCollapsed" classname="com.pocketshell.core.agents.CodexParserTest" time="0.001"/>
+  <testcase name="genuineUserInstructionsPasteIsNotCollapsed" classname="com.pocketshell.core.agents.CodexParserTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

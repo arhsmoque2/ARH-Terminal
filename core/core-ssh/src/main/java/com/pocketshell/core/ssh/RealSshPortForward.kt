@@ -76,6 +76,7 @@ internal class RealSshPortForward(
         CopyOnWriteArraySet()
 
     /** Daemon thread that accepts incoming local connections. */
+    @Suppress("UnusedPrivateProperty")
     private val acceptThread: Thread = Thread(::acceptLoop, "ssh-portfwd-accept-$localPort").apply {
         isDaemon = true
         start()
@@ -121,7 +122,7 @@ internal class RealSshPortForward(
             // channel-open packet can never interleave with the keepalive / a
             // `-CC` write / another exec open on the same transport.
             channels.openChannel(remoteHost, remotePort)
-        } catch (t: Throwable) {
+        } catch (@Suppress("SwallowedException") t: Throwable) {
             // Couldn't open the channel — drop the local connection. Don't
             // crash the accept loop; another connection might succeed.
             releaseConnectionSlot()

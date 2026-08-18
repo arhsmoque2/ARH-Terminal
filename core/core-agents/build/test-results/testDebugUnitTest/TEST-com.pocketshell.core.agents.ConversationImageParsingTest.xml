@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.pocketshell.core.agents.ConversationImageParsingTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-08-18T13:42:56.204Z" hostname="ARH-G4" time="0.013">
+  <properties/>
+  <testcase name="claudeImageOnlyTurnEmitsImageCarryingMessage" classname="com.pocketshell.core.agents.ConversationImageParsingTest" time="0.001"/>
+  <testcase name="openCodeToolResultImageIsModeled" classname="com.pocketshell.core.agents.ConversationImageParsingTest" time="0.006"/>
+  <testcase name="claudeToolResultImageIsModeled" classname="com.pocketshell.core.agents.ConversationImageParsingTest" time="0.0"/>
+  <testcase name="plainTextTurnsHaveNoImages" classname="com.pocketshell.core.agents.ConversationImageParsingTest" time="0.001"/>
+  <testcase name="openCodeNonImageFileAttachmentIsNotModeledAsImage" classname="com.pocketshell.core.agents.ConversationImageParsingTest" time="0.001"/>
+  <testcase name="codexUserPastedImageByPathIsModeled" classname="com.pocketshell.core.agents.ConversationImageParsingTest" time="0.0"/>
+  <testcase name="claudeDataUriUrlIsDecomposedToBase64" classname="com.pocketshell.core.agents.ConversationImageParsingTest" time="0.002"/>
+  <testcase name="codexFunctionCallOutputImageIsModeled" classname="com.pocketshell.core.agents.ConversationImageParsingTest" time="0.0"/>
+  <testcase name="codexImageUrlBlockIsModeled" classname="com.pocketshell.core.agents.ConversationImageParsingTest" time="0.0"/>
+  <testcase name="claudeUserImageBlockByPathIsModeled" classname="com.pocketshell.core.agents.ConversationImageParsingTest" time="0.001"/>
+  <testcase name="openCodeFileAttachmentWithImageMimeIsModeled" classname="com.pocketshell.core.agents.ConversationImageParsingTest" time="0.0"/>
+  <testcase name="openCodeImagePartByPathIsModeled" classname="com.pocketshell.core.agents.ConversationImageParsingTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

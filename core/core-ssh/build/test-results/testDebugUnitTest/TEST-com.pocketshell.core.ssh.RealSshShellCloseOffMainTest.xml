@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.pocketshell.core.ssh.RealSshShellCloseOffMainTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-08-18T13:44:56.925Z" hostname="ARH-G4" time="0.012">
+  <properties/>
+  <testcase name="close returns to the caller without parking for the bounded teardown wait" classname="com.pocketshell.core.ssh.RealSshShellCloseOffMainTest" time="0.009"/>
+  <testcase name="close returns within the bound even when the channel close wedges" classname="com.pocketshell.core.ssh.RealSshShellCloseOffMainTest" time="0.001"/>
+  <testcase name="close runs the channel close off the calling thread" classname="com.pocketshell.core.ssh.RealSshShellCloseOffMainTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

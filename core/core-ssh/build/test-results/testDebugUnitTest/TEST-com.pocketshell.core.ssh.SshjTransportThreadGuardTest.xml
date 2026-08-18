@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.pocketshell.core.ssh.SshjTransportThreadGuardTest" tests="16" skipped="0" failures="0" errors="0" timestamp="2026-08-18T13:44:57.975Z" hostname="ARH-G4" time="0.023">
+  <properties/>
+  <testcase name="installIfNecessary handles null previous handler" classname="com.pocketshell.core.ssh.SshjTransportThreadGuardTest" time="0.004"/>
+  <testcase name="re-install on top of an existing ChainedHandler does not double-wrap" classname="com.pocketshell.core.ssh.SshjTransportThreadGuardTest" time="0.0"/>
+  <testcase name="predicate rejects non-sshj thread even with TransportException" classname="com.pocketshell.core.ssh.SshjTransportThreadGuardTest" time="0.0"/>
+  <testcase name="predicate stops at a reasonable cause chain depth" classname="com.pocketshell.core.ssh.SshjTransportThreadGuardTest" time="0.002"/>
+  <testcase name="predicate accepts sshj thread with wrapped SocketException" classname="com.pocketshell.core.ssh.SshjTransportThreadGuardTest" time="0.0"/>
+  <testcase name="predicate accepts sshj thread with bare IOException" classname="com.pocketshell.core.ssh.SshjTransportThreadGuardTest" time="0.001"/>
+  <testcase name="chained handler routes non-sshj-thread crashes through previous" classname="com.pocketshell.core.ssh.SshjTransportThreadGuardTest" time="0.001"/>
+  <testcase name="predicate accepts sshj-Reader thread with SSHException" classname="com.pocketshell.core.ssh.SshjTransportThreadGuardTest" time="0.0"/>
+  <testcase name="installIfNecessary chains over the previous default handler" classname="com.pocketshell.core.ssh.SshjTransportThreadGuardTest" time="0.001"/>
+  <testcase name="predicate rejects sshj thread with NullPointerException" classname="com.pocketshell.core.ssh.SshjTransportThreadGuardTest" time="0.001"/>
+  <testcase name="predicate walks the cause chain for transport exceptions" classname="com.pocketshell.core.ssh.SshjTransportThreadGuardTest" time="0.0"/>
+  <testcase name="predicate accepts sshj-KeepAliveRunner thread" classname="com.pocketshell.core.ssh.SshjTransportThreadGuardTest" time="0.004"/>
+  <testcase name="predicate accepts sshj-Reader thread with TransportException" classname="com.pocketshell.core.ssh.SshjTransportThreadGuardTest" time="0.001"/>
+  <testcase name="installed handler swallows sshj-thread transport crashes" classname="com.pocketshell.core.ssh.SshjTransportThreadGuardTest" time="0.005"/>
+  <testcase name="installIfNecessary is idempotent across calls" classname="com.pocketshell.core.ssh.SshjTransportThreadGuardTest" time="0.0"/>
+  <testcase name="chained handler propagates sshj thread NPE through previous" classname="com.pocketshell.core.ssh.SshjTransportThreadGuardTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[Aug 18, 2026 9:44:57 PM com.pocketshell.core.ssh.SshjTransportThreadGuard installIfNecessary
+INFO: issue173-sshj-guard installed chained UncaughtExceptionHandler over <none>
+Aug 18, 2026 9:44:57 PM com.pocketshell.core.ssh.SshjTransportThreadGuard$ChainedHandler uncaughtException
+SEVERE: issue173-sshj-guard uncaught exception on 'AppMain' with no chained handler: java.lang.IllegalStateException: must not throw, must not crash
+java.lang.IllegalStateException: must not throw, must not crash
+	at com.pocketshell.core.ssh.SshjTransportThreadGuardTest.installIfNecessary handles null previous handler(SshjTransportThreadGuardTest.kt:189)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.internal.runners.statements.RunBefores.evaluate(RunBefores.java:26)
+	at org.junit.internal.runners.statements.RunAfters.evaluate(RunAfters.java:27)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.BlockJUnit4ClassRunner$1.evaluate(BlockJUnit4ClassRunner.java:100)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:366)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:103)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:63)
+	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+	at org.junit.runner.JUnitCore.run(JUnitCore.java:137)
+	at org.junit.runner.JUnitCore.run(JUnitCore.java:115)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestExecutor.runRequest(JUnitTestExecutor.java:175)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestExecutor.accept(JUnitTestExecutor.java:84)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestExecutor.accept(JUnitTestExecutor.java:47)
+	at org.gradle.api.internal.tasks.testing.junit.AbstractJUnitTestDefinitionProcessor.processTestDefinition(AbstractJUnitTestDefinitionProcessor.java:65)
+	at org.gradle.api.internal.tasks.testing.SuiteTestDefinitionProcessor.processTestDefinition(SuiteTestDefinitionProcessor.java:53)
+	at jdk.internal.reflect.GeneratedMethodAccessor9.invoke(Unknown Source)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at org.gradle.internal.dispatch.MethodInvocation.invokeOn(MethodInvocation.java:77)
+	at org.gradle.internal.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:28)
+	at org.gradle.internal.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:19)
+	at org.gradle.internal.dispatch.ContextClassLoaderDispatch.dispatch(ContextClassLoaderDispatch.java:33)
+	at org.gradle.internal.dispatch.ProxyDispatchAdapter$DispatchingInvocationHandler.invoke(ProxyDispatchAdapter.java:88)
+	at jdk.proxy1/jdk.proxy1.$Proxy4.processTestDefinition(Unknown Source)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker$2.run(TestWorker.java:178)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.executeAndMaintainThreadName(TestWorker.java:126)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.execute(TestWorker.java:103)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.execute(TestWorker.java:63)
+	at org.gradle.process.internal.worker.child.ActionExecutionWorker.execute(ActionExecutionWorker.java:56)
+	at org.gradle.process.internal.worker.child.SystemApplicationClassLoaderWorker.call(SystemApplicationClassLoaderWorker.java:122)
+	at org.gradle.process.internal.worker.child.SystemApplicationClassLoaderWorker.call(SystemApplicationClassLoaderWorker.java:72)
+	at worker.org.gradle.process.internal.worker.GradleWorkerMain.run(GradleWorkerMain.java:69)
+	at worker.org.gradle.process.internal.worker.GradleWorkerMain.main(GradleWorkerMain.java:74)
+
+Aug 18, 2026 9:44:57 PM com.pocketshell.core.ssh.SshjTransportThreadGuard installIfNecessary
+INFO: issue173-sshj-guard installed chained UncaughtExceptionHandler over com.pocketshell.core.ssh.SshjTransportThreadGuardTest$$Lambda$277/0x0000019fbd2b2588
+Aug 18, 2026 9:44:57 PM com.pocketshell.core.ssh.SshjTransportThreadGuard installIfNecessary
+INFO: issue173-sshj-guard installed chained UncaughtExceptionHandler over com.pocketshell.core.ssh.SshjTransportThreadGuardTest$$Lambda$280/0x0000019fbd2b2bd8
+Aug 18, 2026 9:44:57 PM com.pocketshell.core.ssh.SshjTransportThreadGuard installIfNecessary
+INFO: issue173-sshj-guard installed chained UncaughtExceptionHandler over com.pocketshell.core.ssh.SshjTransportThreadGuardTest$$Lambda$286/0x0000019fbd2b3870
+Aug 18, 2026 9:44:57 PM com.pocketshell.core.ssh.SshjTransportThreadGuard$ChainedHandler uncaughtException
+WARNING: issue173-sshj-guard swallowed sshj-thread crash on 'sshj-Reader': net.schmizz.sshj.transport.TransportException: Broken transport; encountered EOF
+net.schmizz.sshj.transport.TransportException: Broken transport; encountered EOF
+	at com.pocketshell.core.ssh.SshjTransportThreadGuardTest.installed handler swallows sshj-thread transport crashes(SshjTransportThreadGuardTest.kt:205)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.internal.runners.statements.RunBefores.evaluate(RunBefores.java:26)
+	at org.junit.internal.runners.statements.RunAfters.evaluate(RunAfters.java:27)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.BlockJUnit4ClassRunner$1.evaluate(BlockJUnit4ClassRunner.java:100)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:366)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:103)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:63)
+	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+	at org.junit.runner.JUnitCore.run(JUnitCore.java:137)
+	at org.junit.runner.JUnitCore.run(JUnitCore.java:115)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestExecutor.runRequest(JUnitTestExecutor.java:175)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestExecutor.accept(JUnitTestExecutor.java:84)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestExecutor.accept(JUnitTestExecutor.java:47)
+	at org.gradle.api.internal.tasks.testing.junit.AbstractJUnitTestDefinitionProcessor.processTestDefinition(AbstractJUnitTestDefinitionProcessor.java:65)
+	at org.gradle.api.internal.tasks.testing.SuiteTestDefinitionProcessor.processTestDefinition(SuiteTestDefinitionProcessor.java:53)
+	at jdk.internal.reflect.GeneratedMethodAccessor9.invoke(Unknown Source)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at org.gradle.internal.dispatch.MethodInvocation.invokeOn(MethodInvocation.java:77)
+	at org.gradle.internal.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:28)
+	at org.gradle.internal.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:19)
+	at org.gradle.internal.dispatch.ContextClassLoaderDispatch.dispatch(ContextClassLoaderDispatch.java:33)
+	at org.gradle.internal.dispatch.ProxyDispatchAdapter$DispatchingInvocationHandler.invoke(ProxyDispatchAdapter.java:88)
+	at jdk.proxy1/jdk.proxy1.$Proxy4.processTestDefinition(Unknown Source)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker$2.run(TestWorker.java:178)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.executeAndMaintainThreadName(TestWorker.java:126)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.execute(TestWorker.java:103)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.execute(TestWorker.java:63)
+	at org.gradle.process.internal.worker.child.ActionExecutionWorker.execute(ActionExecutionWorker.java:56)
+	at org.gradle.process.internal.worker.child.SystemApplicationClassLoaderWorker.call(SystemApplicationClassLoaderWorker.java:122)
+	at org.gradle.process.internal.worker.child.SystemApplicationClassLoaderWorker.call(SystemApplicationClassLoaderWorker.java:72)
+	at worker.org.gradle.process.internal.worker.GradleWorkerMain.run(GradleWorkerMain.java:69)
+	at worker.org.gradle.process.internal.worker.GradleWorkerMain.main(GradleWorkerMain.java:74)
+
+Aug 18, 2026 9:44:57 PM com.pocketshell.core.ssh.SshjTransportThreadGuard installIfNecessary
+INFO: issue173-sshj-guard installed chained UncaughtExceptionHandler over com.pocketshell.core.ssh.SshjTransportThreadGuardTest$$Lambda$288/0x0000019fbd2b3ca8
+]]></system-err>
+</testsuite>

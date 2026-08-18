@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.pocketshell.core.ssh.SshAddressFallbackTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-08-18T13:44:57.182Z" hostname="ARH-G4" time="0.028">
+  <properties/>
+  <testcase name="cancellation during first address disconnects it and never starts fallback" classname="com.pocketshell.core.ssh.SshAddressFallbackTest" time="0.009"/>
+  <testcase name="authentication failure does not create a duplicate address dial" classname="com.pocketshell.core.ssh.SshAddressFallbackTest" time="0.01"/>
+  <testcase name="non retryable trust failure stops before a second address" classname="com.pocketshell.core.ssh.SshAddressFallbackTest" time="0.002"/>
+  <testcase name="all address failures report every family and cause within one total budget" classname="com.pocketshell.core.ssh.SshAddressFallbackTest" time="0.003"/>
+  <testcase name="first address failure is disconnected before one second address dial starts" classname="com.pocketshell.core.ssh.SshAddressFallbackTest" time="0.002"/>
+  <testcase name="planner deliberately prefers IPv6 then IPv4 and removes duplicates stably" classname="com.pocketshell.core.ssh.SshAddressFallbackTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
