@@ -54,6 +54,7 @@ dependencies {
     implementation(project(":core:core-tmux"))
     implementation(project(":core:core-agents"))
     implementation(project(":core:core-mcp"))
+    implementation(project(":core:core-relay"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

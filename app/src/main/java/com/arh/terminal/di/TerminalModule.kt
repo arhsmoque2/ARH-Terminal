@@ -4,6 +4,7 @@ import com.arh.terminal.core.mcp.bridge.AccessibilityBridge
 import com.arh.terminal.core.mcp.bridge.DefaultAccessibilityBridge
 import com.arh.terminal.core.mcp.server.McpServerEngine
 import com.arh.terminal.core.mcp.tools.AndroidToolRegistry
+import com.arh.terminal.core.relay.client.RelayWebSocketClient
 import com.pocketshell.core.tmux.TmuxClientFactory
 import dagger.Module
 import dagger.Provides
@@ -48,4 +49,10 @@ object TerminalModule {
         registry: AndroidToolRegistry,
         @ApplicationScope scope: CoroutineScope
     ): McpServerEngine = McpServerEngine(registry, scope)
+
+    @Provides
+    @Singleton
+    fun provideRelayWebSocketClient(
+        @ApplicationScope scope: CoroutineScope
+    ): RelayWebSocketClient = RelayWebSocketClient(scope)
 }

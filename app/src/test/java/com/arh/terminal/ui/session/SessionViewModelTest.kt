@@ -1,6 +1,7 @@
 package com.arh.terminal.ui.session
 
 import com.arh.terminal.core.mcp.server.McpServerEngine
+import com.arh.terminal.core.relay.client.RelayWebSocketClient
 import com.arh.terminal.data.profiles.ProfileRepository
 import com.arh.terminal.util.NetworkMonitor
 import com.pocketshell.core.tmux.TmuxClientFactory
@@ -23,12 +24,13 @@ class SessionViewModelTest {
     private val profileRepository: ProfileRepository = ProfileRepository()
     private val networkMonitor: NetworkMonitor = mockk(relaxed = true)
     private val mcpServerEngine: McpServerEngine = mockk(relaxed = true)
+    private val relayClient: RelayWebSocketClient = mockk(relaxed = true)
     private lateinit var viewModel: SessionViewModel
 
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
-        viewModel = SessionViewModel(factory, profileRepository, networkMonitor, mcpServerEngine)
+        viewModel = SessionViewModel(factory, profileRepository, networkMonitor, mcpServerEngine, relayClient)
     }
 
     @After

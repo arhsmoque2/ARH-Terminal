@@ -9,11 +9,13 @@ import androidx.lifecycle.ViewModel;
 import com.arh.terminal.core.mcp.bridge.AccessibilityBridge;
 import com.arh.terminal.core.mcp.server.McpServerEngine;
 import com.arh.terminal.core.mcp.tools.AndroidToolRegistry;
+import com.arh.terminal.core.relay.client.RelayWebSocketClient;
 import com.arh.terminal.data.profiles.ProfileRepository;
 import com.arh.terminal.di.TerminalModule_ProvideAccessibilityBridgeFactory;
 import com.arh.terminal.di.TerminalModule_ProvideAndroidToolRegistryFactory;
 import com.arh.terminal.di.TerminalModule_ProvideApplicationScopeFactory;
 import com.arh.terminal.di.TerminalModule_ProvideMcpServerEngineFactory;
+import com.arh.terminal.di.TerminalModule_ProvideRelayWebSocketClientFactory;
 import com.arh.terminal.di.TerminalModule_ProvideTmuxClientFactoryFactory;
 import com.arh.terminal.ui.session.SessionViewModel;
 import com.arh.terminal.ui.session.SessionViewModel_HiltModules;
@@ -455,7 +457,7 @@ public final class DaggerARHTerminalApp_HiltComponents_SingletonC {
       public T get() {
         switch (id) {
           case 0: // com.arh.terminal.ui.session.SessionViewModel
-          return (T) new SessionViewModel(singletonCImpl.provideTmuxClientFactoryProvider.get(), singletonCImpl.profileRepositoryProvider.get(), singletonCImpl.networkMonitorProvider.get(), singletonCImpl.provideMcpServerEngineProvider.get());
+          return (T) new SessionViewModel(singletonCImpl.provideTmuxClientFactoryProvider.get(), singletonCImpl.profileRepositoryProvider.get(), singletonCImpl.networkMonitorProvider.get(), singletonCImpl.provideMcpServerEngineProvider.get(), singletonCImpl.provideRelayWebSocketClientProvider.get());
 
           default: throw new AssertionError(id);
         }
@@ -551,6 +553,8 @@ public final class DaggerARHTerminalApp_HiltComponents_SingletonC {
 
     Provider<McpServerEngine> provideMcpServerEngineProvider;
 
+    Provider<RelayWebSocketClient> provideRelayWebSocketClientProvider;
+
     SingletonCImpl(ApplicationContextModule applicationContextModuleParam) {
       this.applicationContextModule = applicationContextModuleParam;
       initialize(applicationContextModuleParam);
@@ -566,10 +570,11 @@ public final class DaggerARHTerminalApp_HiltComponents_SingletonC {
       this.provideAccessibilityBridgeProvider = DoubleCheck.provider(new SwitchingProvider<AccessibilityBridge>(singletonCImpl, 6));
       this.provideAndroidToolRegistryProvider = DoubleCheck.provider(new SwitchingProvider<AndroidToolRegistry>(singletonCImpl, 5));
       this.provideMcpServerEngineProvider = DoubleCheck.provider(new SwitchingProvider<McpServerEngine>(singletonCImpl, 4));
+      this.provideRelayWebSocketClientProvider = DoubleCheck.provider(new SwitchingProvider<RelayWebSocketClient>(singletonCImpl, 7));
     }
 
     @Override
-    public void injectARHTerminalApp(ARHTerminalApp aRHTerminalApp) {
+    public void injectARHTerminalApp(ARHTerminalApp arg0) {
     }
 
     @Override
@@ -621,6 +626,9 @@ public final class DaggerARHTerminalApp_HiltComponents_SingletonC {
 
           case 6: // com.arh.terminal.core.mcp.bridge.AccessibilityBridge
           return (T) TerminalModule_ProvideAccessibilityBridgeFactory.provideAccessibilityBridge();
+
+          case 7: // com.arh.terminal.core.relay.client.RelayWebSocketClient
+          return (T) TerminalModule_ProvideRelayWebSocketClientFactory.provideRelayWebSocketClient(singletonCImpl.provideApplicationScopeProvider.get());
 
           default: throw new AssertionError(id);
         }

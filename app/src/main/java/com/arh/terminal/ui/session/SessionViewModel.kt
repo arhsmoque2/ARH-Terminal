@@ -3,6 +3,8 @@ package com.arh.terminal.ui.session
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.arh.terminal.core.mcp.server.McpServerEngine
+import com.arh.terminal.core.relay.client.RelayStatus
+import com.arh.terminal.core.relay.client.RelayWebSocketClient
 import com.arh.terminal.data.profiles.ConnectionProfile
 import com.arh.terminal.data.profiles.ProfileRepository
 import com.arh.terminal.ui.conversation.AgentTurn
@@ -33,7 +35,8 @@ class SessionViewModel @Inject constructor(
     private val tmuxFactory: TmuxClientFactory,
     private val profileRepository: ProfileRepository,
     private val networkMonitor: NetworkMonitor,
-    private val mcpServerEngine: McpServerEngine
+    private val mcpServerEngine: McpServerEngine,
+    private val relayClient: RelayWebSocketClient
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SessionUiState())
@@ -67,7 +70,44 @@ class SessionViewModel @Inject constructor(
                 _uiState.update { it.copy(mcpStats = stats) }
             }
         }
+
+        viewModelScope.launch {
+            relayClient.status.collect { rStatus ->
+                _uiState.update { it.copy(relayStatus = rStatus) }
+                if (rStatus is RelayStatus.Connected) {
+                    _uiState.update {
+                        it.copy(connectionStatus = ConnectionStatus.Connected(rStatus.url), isAttached = true)
+                    }
+                } else if (rStatus is RelayStatus.Error) {
+                    _uiState.update {
+                        it.copy(connectionStatus = ConnectionStatus.Error(rStatus.error))
+                    }
+                }
+            }
+        }
+
+        viewModelScope.launch {
+            relayClient.incomingMessages.collect { decryptedMsg ->
+                val turns = parseOutputTurns(decryptedMsg)
+                val targetPane = _uiState.value.selectedPaneId ?: "%0"
+                _uiState.update { state ->
+                    val updatedPanes = state.panes.map { p ->
+                        if (p.paneId == targetPane) {
+                            val newHistory = (p.outputHistory + decryptedMsg).takeLast(200)
+                            val newTurns = p.agentTurns + turns
+                            p.copy(outputHistory = newHistory, agentTurns = newTurns)
+                        } else p
+                    }
+                    state.copy(panes = updatedPanes)
+                }
+                detectApprovalPrompts(decryptedMsg)
+            }
+        }
     }
+
+    fun setTransportMode(mode: TransportMode) = _uiState.update { it.copy(transportMode = mode) }
+    fun updateRelayUrl(url: String) = _uiState.update { it.copy(relayUrl = url) }
+    fun updateRelaySecret(secret: String) = _uiState.update { it.copy(relaySecretKey = secret) }
 
     fun toggleMcpServer(start: Boolean, port: Int = 8070, token: String = "ca48ffe8-cb63-45be-bfd5-1911e367fbcd") {
         if (start) {
@@ -110,6 +150,15 @@ class SessionViewModel @Inject constructor(
     fun connect(privateKeyPem: String = "") {
         lastUsedKeyPem = privateKeyPem
         val currentState = _uiState.value
+
+        if (currentState.transportMode == TransportMode.RelayWebSocket) {
+            _uiState.update { it.copy(connectionStatus = ConnectionStatus.Connecting("Connecting to E2EE Relay ${currentState.relayUrl}...")) }
+            relayClient.connect(currentState.relayUrl, currentState.relaySecretKey, currentState.activeSessionName)
+            val initialPane = PaneData(paneId = "%0", windowId = "@0", title = "Relay Session")
+            _uiState.update { it.copy(panes = listOf(initialPane), selectedPaneId = "%0") }
+            return
+        }
+
         _uiState.update { it.copy(connectionStatus = ConnectionStatus.Connecting("Opening SSH to ${currentState.host}...")) }
 
         viewModelScope.launch(Dispatchers.IO) {
@@ -297,6 +346,11 @@ class SessionViewModel @Inject constructor(
             state.copy(panes = updatedPanes)
         }
 
+        if (_uiState.value.transportMode == TransportMode.RelayWebSocket) {
+            relayClient.send(prompt, type = "prompt")
+            return
+        }
+
         val client = activeTmuxClient ?: return
         viewModelScope.launch(Dispatchers.IO) {
             client.sendCommand("send-keys -t $targetPane \"$prompt\" Enter")
@@ -304,6 +358,10 @@ class SessionViewModel @Inject constructor(
     }
 
     fun sendRawKey(rawSequence: String) {
+        if (_uiState.value.transportMode == TransportMode.RelayWebSocket) {
+            relayClient.send(rawSequence, type = "raw-key")
+            return
+        }
         val client = activeTmuxClient ?: return
         val targetPane = _uiState.value.selectedPaneId ?: "%0"
         viewModelScope.launch(Dispatchers.IO) {
@@ -313,6 +371,11 @@ class SessionViewModel @Inject constructor(
 
     fun approvePrompt(approve: Boolean) {
         val reply = if (approve) "y" else "n"
+        if (_uiState.value.transportMode == TransportMode.RelayWebSocket) {
+            relayClient.send(reply, type = "approval")
+            _uiState.update { it.copy(pendingApprovalCommand = null) }
+            return
+        }
         val client = activeTmuxClient ?: return
         val targetPane = _uiState.value.selectedPaneId ?: "%0"
         viewModelScope.launch(Dispatchers.IO) {
@@ -322,6 +385,7 @@ class SessionViewModel @Inject constructor(
     }
 
     fun disconnect() {
+        relayClient.disconnect()
         activeTmuxClient = null
         activeSshSession = null
         _uiState.update {
