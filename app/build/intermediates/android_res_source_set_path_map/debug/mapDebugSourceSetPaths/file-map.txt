@@ -1,7 +1,0 @@
-com.arh.terminal.app-pngs-0 D:\_ARH-AGENT-OS\_AGENT-WORKSPACE\projects\ARH-Terminal\app\build\generated\res\pngs\debug
-com.arh.terminal.app-updated_navigation_xml-1 D:\_ARH-AGENT-OS\_AGENT-WORKSPACE\projects\ARH-Terminal\app\build\generated\updated_navigation_xml\debug
-com.arh.terminal.app-packageDebugResources-2 D:\_ARH-AGENT-OS\_AGENT-WORKSPACE\projects\ARH-Terminal\app\build\intermediates\incremental\debug\packageDebugResources\merged.dir
-com.arh.terminal.app-packageDebugResources-3 D:\_ARH-AGENT-OS\_AGENT-WORKSPACE\projects\ARH-Terminal\app\build\intermediates\incremental\debug\packageDebugResources\stripped.dir
-com.arh.terminal.app-debug-4 D:\_ARH-AGENT-OS\_AGENT-WORKSPACE\projects\ARH-Terminal\app\build\intermediates\merged_res\debug\mergeDebugResources
-com.arh.terminal.app-debug-5 D:\_ARH-AGENT-OS\_AGENT-WORKSPACE\projects\ARH-Terminal\app\src\debug\res
-com.arh.terminal.app-main-6 D:\_ARH-AGENT-OS\_AGENT-WORKSPACE\projects\ARH-Terminal\app\src\main\res

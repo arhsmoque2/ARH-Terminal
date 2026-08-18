@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="com.pocketshell.core.ssh.SshConnectionFailureTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-08-18T13:44:57.230Z" hostname="ARH-G4" time="0.006">
-  <properties/>
-  <testcase name="authenticate failure returns Result failure and disconnects the client" classname="com.pocketshell.core.ssh.SshConnectionFailureTest" time="0.003"/>
-  <testcase name="an SshException from the transport is returned as-is" classname="com.pocketshell.core.ssh.SshConnectionFailureTest" time="0.002"/>
-  <testcase name="transport connect failure returns Result failure and disconnects the client" classname="com.pocketshell.core.ssh.SshConnectionFailureTest" time="0.001"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

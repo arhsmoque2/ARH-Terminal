@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="com.pocketshell.core.ssh.SshLeaseReleaseInterruptibleTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-08-18T13:44:57.430Z" hostname="ARH-G4" time="0.533">
-  <properties/>
-  <testcase name="healthy release completes within the caller timeout" classname="com.pocketshell.core.ssh.SshLeaseReleaseInterruptibleTest" time="0.002"/>
-  <testcase name="caller timeout interrupts a wedged lease release" classname="com.pocketshell.core.ssh.SshLeaseReleaseInterruptibleTest" time="0.316"/>
-  <testcase name="release is idempotent and a cancelled release leaves the lease releasable" classname="com.pocketshell.core.ssh.SshLeaseReleaseInterruptibleTest" time="0.215"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

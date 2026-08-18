@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="com.pocketshell.core.ssh.RealSshSessionKeepAliveSingleFlightTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-08-18T13:44:49.551Z" hostname="ARH-G4" time="0.544">
-  <properties/>
-  <testcase name="sendKeepAlive does not send a second global request while the prior reply is pending" classname="com.pocketshell.core.ssh.RealSshSessionKeepAliveSingleFlightTest" time="0.22"/>
-  <testcase name="concurrent sendKeepAlive callers share one wire request" classname="com.pocketshell.core.ssh.RealSshSessionKeepAliveSingleFlightTest" time="0.215"/>
-  <testcase name="cancelled keepalive send clears provisional single-flight marker" classname="com.pocketshell.core.ssh.RealSshSessionKeepAliveSingleFlightTest" time="0.109"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>
