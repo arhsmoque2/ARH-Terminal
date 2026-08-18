@@ -2,6 +2,7 @@ package com.arh.terminal.ui.session
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.arh.terminal.core.mcp.server.McpServerEngine
 import com.arh.terminal.data.profiles.ConnectionProfile
 import com.arh.terminal.data.profiles.ProfileRepository
 import com.arh.terminal.ui.conversation.AgentTurn
@@ -31,7 +32,8 @@ import javax.inject.Inject
 class SessionViewModel @Inject constructor(
     private val tmuxFactory: TmuxClientFactory,
     private val profileRepository: ProfileRepository,
-    private val networkMonitor: NetworkMonitor
+    private val networkMonitor: NetworkMonitor,
+    private val mcpServerEngine: McpServerEngine
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SessionUiState())
@@ -54,11 +56,24 @@ class SessionViewModel @Inject constructor(
                 val wasDisconnected = !_uiState.value.networkStatus.isConnected
                 _uiState.update { it.copy(networkStatus = netStatus) }
 
-                // Auto-reconnect if network comes back online while in Connected state
                 if (wasDisconnected && netStatus.isConnected && activeSshSession == null && _uiState.value.connectionStatus is ConnectionStatus.Error) {
                     connect(lastUsedKeyPem)
                 }
             }
+        }
+
+        viewModelScope.launch {
+            mcpServerEngine.stats.collect { stats ->
+                _uiState.update { it.copy(mcpStats = stats) }
+            }
+        }
+    }
+
+    fun toggleMcpServer(start: Boolean, port: Int = 8070, token: String = "ca48ffe8-cb63-45be-bfd5-1911e367fbcd") {
+        if (start) {
+            mcpServerEngine.start(port, token)
+        } else {
+            mcpServerEngine.stop()
         }
     }
 

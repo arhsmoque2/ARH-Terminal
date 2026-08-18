@@ -7,6 +7,7 @@ INJECTED from D:\_ARH-AGENT-OS\_AGENT-WORKSPACE\projects\ARH-Terminal\app\src\ma
 MERGED from [:core:core-tmux] D:\_ARH-AGENT-OS\_AGENT-WORKSPACE\projects\ARH-Terminal\core\core-tmux\build\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:2:1-7:12
 MERGED from [:core:core-ssh] D:\_ARH-AGENT-OS\_AGENT-WORKSPACE\projects\ARH-Terminal\core\core-ssh\build\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:2:1-7:12
 MERGED from [:core:core-agents] D:\_ARH-AGENT-OS\_AGENT-WORKSPACE\projects\ARH-Terminal\core\core-agents\build\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:2:1-7:12
+MERGED from [:core:core-mcp] D:\_ARH-AGENT-OS\_AGENT-WORKSPACE\projects\ARH-Terminal\core\core-mcp\build\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.hilt:hilt-navigation-compose:1.3.0] C:\Users\Abdul Rahman Hilmi\.gradle\caches\9.4.0\transforms\f7ddd91492cb52fc5abdb475dcb183f9\transformed\hilt-navigation-compose-1.3.0\AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.hilt:hilt-lifecycle-viewmodel-compose:1.3.0] C:\Users\Abdul Rahman Hilmi\.gradle\caches\9.4.0\transforms\e81050bc8208d5304fdf3dc72bfa0a15\transformed\hilt-lifecycle-viewmodel-compose-1.3.0\AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.hilt:hilt-lifecycle-viewmodel:1.3.0] C:\Users\Abdul Rahman Hilmi\.gradle\caches\9.4.0\transforms\2cea51173f427768fbcf64e01560b838\transformed\hilt-lifecycle-viewmodel-1.3.0\AndroidManifest.xml:2:1-7:12
@@ -168,6 +169,8 @@ MERGED from [:core:core-ssh] D:\_ARH-AGENT-OS\_AGENT-WORKSPACE\projects\ARH-Term
 MERGED from [:core:core-ssh] D:\_ARH-AGENT-OS\_AGENT-WORKSPACE\projects\ARH-Terminal\core\core-ssh\build\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:5:5-44
 MERGED from [:core:core-agents] D:\_ARH-AGENT-OS\_AGENT-WORKSPACE\projects\ARH-Terminal\core\core-agents\build\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:5:5-44
 MERGED from [:core:core-agents] D:\_ARH-AGENT-OS\_AGENT-WORKSPACE\projects\ARH-Terminal\core\core-agents\build\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:5:5-44
+MERGED from [:core:core-mcp] D:\_ARH-AGENT-OS\_AGENT-WORKSPACE\projects\ARH-Terminal\core\core-mcp\build\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:5:5-44
+MERGED from [:core:core-mcp] D:\_ARH-AGENT-OS\_AGENT-WORKSPACE\projects\ARH-Terminal\core\core-mcp\build\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:5:5-44
 MERGED from [androidx.hilt:hilt-navigation-compose:1.3.0] C:\Users\Abdul Rahman Hilmi\.gradle\caches\9.4.0\transforms\f7ddd91492cb52fc5abdb475dcb183f9\transformed\hilt-navigation-compose-1.3.0\AndroidManifest.xml:5:5-44
 MERGED from [androidx.hilt:hilt-navigation-compose:1.3.0] C:\Users\Abdul Rahman Hilmi\.gradle\caches\9.4.0\transforms\f7ddd91492cb52fc5abdb475dcb183f9\transformed\hilt-navigation-compose-1.3.0\AndroidManifest.xml:5:5-44
 MERGED from [androidx.hilt:hilt-lifecycle-viewmodel-compose:1.3.0] C:\Users\Abdul Rahman Hilmi\.gradle\caches\9.4.0\transforms\e81050bc8208d5304fdf3dc72bfa0a15\transformed\hilt-lifecycle-viewmodel-compose-1.3.0\AndroidManifest.xml:5:5-44

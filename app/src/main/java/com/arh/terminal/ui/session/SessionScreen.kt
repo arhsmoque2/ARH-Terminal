@@ -23,11 +23,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Chat
+import androidx.compose.material.icons.filled.DeveloperBoard
+import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.LinkOff
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.Sensors
 import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material.icons.filled.WifiOff
@@ -62,6 +65,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.arh.terminal.core.mcp.server.McpServerStats
 import com.arh.terminal.data.profiles.ConnectionProfile
 import com.arh.terminal.ui.components.FloatingApprovalHud
 import com.arh.terminal.ui.components.QuickActionBar
@@ -144,7 +148,8 @@ fun SessionScreen(
                     onSaveProfile = viewModel::saveCurrentAsProfile,
                     onHostChange = viewModel::updateHost,
                     onUserChange = viewModel::updateUsername,
-                    onConnect = { password -> viewModel.connect(password) }
+                    onConnect = { password -> viewModel.connect(password) },
+                    onToggleMcp = viewModel::toggleMcpServer
                 )
             }
             is ConnectionStatus.Connecting -> {
@@ -173,7 +178,8 @@ fun SessionScreen(
                     onViewModeChange = viewModel::setViewMode,
                     onToggleAttach = viewModel::toggleAttach,
                     onSelectSession = viewModel::switchSession,
-                    onCreateSession = viewModel::createNewSession
+                    onCreateSession = viewModel::createNewSession,
+                    onToggleMcp = viewModel::toggleMcpServer
                 )
             }
         }
@@ -188,7 +194,8 @@ private fun ConnectionSetupCard(
     onSaveProfile: (String) -> Unit,
     onHostChange: (String) -> Unit,
     onUserChange: (String) -> Unit,
-    onConnect: (String) -> Unit
+    onConnect: (String) -> Unit,
+    onToggleMcp: (Boolean, Int, String) -> Unit
 ) {
     var password by remember { mutableStateOf("") }
     var showSaveProfile by remember { mutableStateOf(false) }
@@ -310,6 +317,61 @@ private fun ConnectionSetupCard(
                     }
                 }
             }
+
+            // Embedded MCP Daemon Status Tile on Setup Screen
+            McpMiniTile(stats = state.mcpStats, onToggle = onToggleMcp)
+        }
+    }
+}
+
+@Composable
+private fun McpMiniTile(
+    stats: McpServerStats,
+    onToggle: (Boolean, Int, String) -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
+        shape = RoundedCornerShape(8.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(10.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.Sensors,
+                    contentDescription = null,
+                    tint = if (stats.isRunning) Color(0xFF10B981) else Color.Gray,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Column {
+                    Text(
+                        text = "Android MCP Agent Bridge",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                    Text(
+                        text = if (stats.isRunning) "Listening on port ${stats.port} (:8070/mcp)" else "Stopped",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (stats.isRunning) Color(0xFF38BDF8) else Color.Gray
+                    )
+                }
+            }
+
+            Switch(
+                checked = stats.isRunning,
+                onCheckedChange = { onToggle(it, 8070, "ca48ffe8-cb63-45be-bfd5-1911e367fbcd") },
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = Color(0xFF10B981),
+                    checkedTrackColor = Color(0xFF065F46)
+                )
+            )
         }
     }
 }
@@ -323,7 +385,8 @@ private fun ConnectedSessionView(
     onViewModeChange: (ViewMode) -> Unit,
     onToggleAttach: (Boolean) -> Unit,
     onSelectSession: (String) -> Unit,
-    onCreateSession: (String) -> Unit
+    onCreateSession: (String) -> Unit,
+    onToggleMcp: (Boolean, Int, String) -> Unit
 ) {
     var inputPrompt by remember { mutableStateOf("") }
     var showNewSessionInput by remember { mutableStateOf(false) }
@@ -449,9 +512,13 @@ private fun ConnectedSessionView(
             }
         }
 
-        // View Mode Switcher: Agent Chat vs Raw Terminal
+        // View Mode Switcher: Agent Chat vs Raw Terminal vs MCP Bridge
         TabRow(
-            selectedTabIndex = if (state.viewMode == ViewMode.AgentChat) 0 else 1
+            selectedTabIndex = when (state.viewMode) {
+                ViewMode.AgentChat -> 0
+                ViewMode.RawTerminal -> 1
+                ViewMode.McpBridge -> 2
+            }
         ) {
             Tab(
                 selected = state.viewMode == ViewMode.AgentChat,
@@ -465,6 +532,12 @@ private fun ConnectedSessionView(
                 text = { Text("Terminal Feed") },
                 icon = { Icon(Icons.Default.Terminal, contentDescription = null) }
             )
+            Tab(
+                selected = state.viewMode == ViewMode.McpBridge,
+                onClick = { onViewModeChange(ViewMode.McpBridge) },
+                text = { Text("MCP Bridge") },
+                icon = { Icon(Icons.Default.Sensors, contentDescription = null) }
+            )
         }
 
         // View Content
@@ -473,7 +546,9 @@ private fun ConnectedSessionView(
                 .fillMaxWidth()
                 .weight(1f)
         ) {
-            if (!state.isAttached) {
+            if (state.viewMode == ViewMode.McpBridge) {
+                McpBridgeDashboard(stats = state.mcpStats, onToggle = onToggleMcp)
+            } else if (!state.isAttached) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
@@ -548,20 +623,22 @@ private fun ConnectedSessionView(
         }
 
         // --- ⚡ Moggsh-style Floating Approval HUD ---
-        FloatingApprovalHud(
-            pendingCommand = state.pendingApprovalCommand,
-            onApprove = onApprove
-        )
+        if (state.viewMode != ViewMode.McpBridge) {
+            FloatingApprovalHud(
+                pendingCommand = state.pendingApprovalCommand,
+                onApprove = onApprove
+            )
+        }
 
         // --- ⌨️ Quick-Action Extended Key Bar ---
-        if (state.isAttached) {
+        if (state.isAttached && state.viewMode != ViewMode.McpBridge) {
             QuickActionBar(
                 onSendKey = { key -> viewModel.sendRawKey(key.rawSequence) }
             )
         }
 
         // Send Prompt Input Row
-        if (state.isAttached) {
+        if (state.isAttached && state.viewMode != ViewMode.McpBridge) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -583,6 +660,122 @@ private fun ConnectedSessionView(
                 ) {
                     Icon(Icons.Default.Send, contentDescription = "Send", tint = MaterialTheme.colorScheme.primary)
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun McpBridgeDashboard(
+    stats: McpServerStats,
+    onToggle: (Boolean, Int, String) -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxSize(),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.DeveloperBoard,
+                        contentDescription = null,
+                        tint = Color(0xFF38BDF8),
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column {
+                        Text(
+                            text = "On-Device MCP Agent Server",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                        Text(
+                            text = "56 Native Android Tools Exported",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color(0xFF94A3B8)
+                        )
+                    }
+                }
+
+                Switch(
+                    checked = stats.isRunning,
+                    onCheckedChange = { onToggle(it, 8070, "ca48ffe8-cb63-45be-bfd5-1911e367fbcd") },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = Color(0xFF10B981),
+                        checkedTrackColor = Color(0xFF065F46)
+                    )
+                )
+            }
+
+            // Stats grid
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Card(
+                    modifier = Modifier.weight(1f),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF0F172A))
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text(text = "Total Tool Calls", fontSize = 11.sp, color = Color.Gray)
+                        Text(text = "${stats.totalToolCalls}", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color(0xFF38BDF8))
+                    }
+                }
+
+                Card(
+                    modifier = Modifier.weight(1f),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF0F172A))
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text(text = "Active Sessions", fontSize = 11.sp, color = Color.Gray)
+                        Text(text = "${stats.activeSessions}", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color(0xFF10B981))
+                    }
+                }
+            }
+
+            // Connection Info Box
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF0F172A))
+            ) {
+                Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(text = "PC Agent Endpoint", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color.White)
+                    Text(
+                        text = "http://100.85.170.170:${stats.port}/mcp",
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 12.sp,
+                        color = Color(0xFFFBBF24)
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(text = "Bearer Secret Token", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color.White)
+                    Text(
+                        text = stats.bearerToken,
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 11.sp,
+                        color = Color(0xFF94A3B8)
+                    )
+                }
+            }
+
+            if (stats.lastToolCall != null) {
+                Text(
+                    text = "Last executed tool: ${stats.lastToolCall}",
+                    fontSize = 12.sp,
+                    color = Color(0xFF10B981),
+                    fontFamily = FontFamily.Monospace
+                )
             }
         }
     }

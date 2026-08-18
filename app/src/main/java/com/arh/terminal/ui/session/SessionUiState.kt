@@ -1,6 +1,7 @@
 package com.arh.terminal.ui.session
 
 import androidx.compose.runtime.Immutable
+import com.arh.terminal.core.mcp.server.McpServerStats
 import com.arh.terminal.data.profiles.ConnectionProfile
 import com.arh.terminal.ui.conversation.AgentTurn
 import com.arh.terminal.util.NetworkStatus
@@ -8,7 +9,8 @@ import com.arh.terminal.util.NetworkType
 
 enum class ViewMode {
     AgentChat,
-    RawTerminal
+    RawTerminal,
+    McpBridge
 }
 
 @Immutable
@@ -40,6 +42,7 @@ data class SessionUiState(
     val profiles: List<ConnectionProfile> = emptyList(),
     val selectedProfileId: String? = "default-win-box",
     val networkStatus: NetworkStatus = NetworkStatus(isConnected = true, type = NetworkType.Wifi),
+    val mcpStats: McpServerStats = McpServerStats(),
     val viewMode: ViewMode = ViewMode.AgentChat,
     val panes: List<PaneData> = emptyList(),
     val selectedPaneId: String? = null,

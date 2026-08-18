@@ -53,6 +53,7 @@ dependencies {
     implementation(project(":core:core-ssh"))
     implementation(project(":core:core-tmux"))
     implementation(project(":core:core-agents"))
+    implementation(project(":core:core-mcp"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

@@ -1,5 +1,9 @@
 package com.arh.terminal.di
 
+import com.arh.terminal.core.mcp.bridge.AccessibilityBridge
+import com.arh.terminal.core.mcp.bridge.DefaultAccessibilityBridge
+import com.arh.terminal.core.mcp.server.McpServerEngine
+import com.arh.terminal.core.mcp.tools.AndroidToolRegistry
 import com.pocketshell.core.tmux.TmuxClientFactory
 import dagger.Module
 import dagger.Provides
@@ -29,4 +33,19 @@ object TerminalModule {
     fun provideTmuxClientFactory(
         @ApplicationScope scope: CoroutineScope
     ): TmuxClientFactory = TmuxClientFactory(scope)
+
+    @Provides
+    @Singleton
+    fun provideAccessibilityBridge(): AccessibilityBridge = DefaultAccessibilityBridge()
+
+    @Provides
+    @Singleton
+    fun provideAndroidToolRegistry(bridge: AccessibilityBridge): AndroidToolRegistry = AndroidToolRegistry(bridge)
+
+    @Provides
+    @Singleton
+    fun provideMcpServerEngine(
+        registry: AndroidToolRegistry,
+        @ApplicationScope scope: CoroutineScope
+    ): McpServerEngine = McpServerEngine(registry, scope)
 }
