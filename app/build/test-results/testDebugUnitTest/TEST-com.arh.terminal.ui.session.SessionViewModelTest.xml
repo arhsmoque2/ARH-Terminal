@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="com.arh.terminal.ui.session.SessionViewModelTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-08-18T16:33:09.233Z" hostname="ARH-G4" time="1.293">
-  <properties/>
-  <testcase name="updateUsernameUpdatesState" classname="com.arh.terminal.ui.session.SessionViewModelTest" time="1.281"/>
-  <testcase name="updateHostUpdatesState" classname="com.arh.terminal.ui.session.SessionViewModelTest" time="0.006"/>
-  <testcase name="initialStateIsDisconnected" classname="com.arh.terminal.ui.session.SessionViewModelTest" time="0.003"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>
