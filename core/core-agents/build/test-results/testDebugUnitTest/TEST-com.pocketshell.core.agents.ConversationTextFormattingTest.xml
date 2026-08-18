@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.pocketshell.core.agents.ConversationTextFormattingTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-08-18T13:42:56.338Z" hostname="ARH-G4" time="0.005">
+  <properties/>
+  <testcase name="stripsMultipleInternalTagKinds" classname="com.pocketshell.core.agents.ConversationTextFormattingTest" time="0.003"/>
+  <testcase name="toleratesAttributesAndCaseInTagName" classname="com.pocketshell.core.agents.ConversationTextFormattingTest" time="0.001"/>
+  <testcase name="proseIsNotConsideredOnlyNoise" classname="com.pocketshell.core.agents.ConversationTextFormattingTest" time="0.0"/>
+  <testcase name="reportsBareTaskIdAsOnlyNoise" classname="com.pocketshell.core.agents.ConversationTextFormattingTest" time="0.001"/>
+  <testcase name="keepsSurroundingProseAndDropsNoiseWrapper" classname="com.pocketshell.core.agents.ConversationTextFormattingTest" time="0.0"/>
+  <testcase name="blankInputIsNotFlaggedAsNoise" classname="com.pocketshell.core.agents.ConversationTextFormattingTest" time="0.0"/>
+  <testcase name="stripsBareTaskIdWrapper" classname="com.pocketshell.core.agents.ConversationTextFormattingTest" time="0.0"/>
+  <testcase name="leavesOrdinaryAngleBracketTextUntouched" classname="com.pocketshell.core.agents.ConversationTextFormattingTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

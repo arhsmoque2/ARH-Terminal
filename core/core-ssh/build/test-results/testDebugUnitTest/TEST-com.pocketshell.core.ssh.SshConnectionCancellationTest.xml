@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.pocketshell.core.ssh.SshConnectionCancellationTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-08-18T13:44:57.217Z" hostname="ARH-G4" time="0.012">
+  <properties/>
+  <testcase name="cancel during handshake does not wait for a blocking disconnect cleanup" classname="com.pocketshell.core.ssh.SshConnectionCancellationTest" time="0.003"/>
+  <testcase name="connect failure disconnects the partially owned client and returns failure" classname="com.pocketshell.core.ssh.SshConnectionCancellationTest" time="0.003"/>
+  <testcase name="cancel during handshake disconnects the partially owned client" classname="com.pocketshell.core.ssh.SshConnectionCancellationTest" time="0.002"/>
+  <testcase name="late success after parent cancellation closes the delivered session" classname="com.pocketshell.core.ssh.SshConnectionCancellationTest" time="0.003"/>
+  <testcase name="disconnect entry publishes nothing, only completion publishes the counters" classname="com.pocketshell.core.ssh.SshConnectionCancellationTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

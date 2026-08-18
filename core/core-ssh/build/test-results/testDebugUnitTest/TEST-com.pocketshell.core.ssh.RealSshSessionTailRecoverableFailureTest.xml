@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.pocketshell.core.ssh.RealSshSessionTailRecoverableFailureTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-08-18T13:44:50.117Z" hostname="ARH-G4" time="0.117">
+  <properties/>
+  <testcase name="tail swallows TransportException from startSession" classname="com.pocketshell.core.ssh.RealSshSessionTailRecoverableFailureTest" time="0.024"/>
+  <testcase name="tail swallows sshj Not connected race from startSession" classname="com.pocketshell.core.ssh.RealSshSessionTailRecoverableFailureTest" time="0.015"/>
+  <testcase name="tail preserves cancellation raised during dispatcher startup" classname="com.pocketshell.core.ssh.RealSshSessionTailRecoverableFailureTest" time="0.004"/>
+  <testcase name="tail propagates genuine programming errors from startSession" classname="com.pocketshell.core.ssh.RealSshSessionTailRecoverableFailureTest" time="0.004"/>
+  <testcase name="tail propagates exact Not connected programming error from exec" classname="com.pocketshell.core.ssh.RealSshSessionTailRecoverableFailureTest" time="0.005"/>
+  <testcase name="tail swallows raw IOException from startSession" classname="com.pocketshell.core.ssh.RealSshSessionTailRecoverableFailureTest" time="0.019"/>
+  <testcase name="tail swallows ConnectionException from startSession" classname="com.pocketshell.core.ssh.RealSshSessionTailRecoverableFailureTest" time="0.015"/>
+  <testcase name="tail swallows SocketException from startSession" classname="com.pocketshell.core.ssh.RealSshSessionTailRecoverableFailureTest" time="0.015"/>
+  <testcase name="tail on a disconnected session ends cleanly without a synchronous throw" classname="com.pocketshell.core.ssh.RealSshSessionTailRecoverableFailureTest" time="0.015"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[Aug 18, 2026 9:44:50 PM com.pocketshell.core.ssh.RealSshSession logTailRecoverableFailure
+INFO: [issue239-tail-recover] tail(/agent.jsonl) ended on transport drop; reconnect path will resume on next attach: TransportException: transport gone
+Aug 18, 2026 9:44:50 PM com.pocketshell.core.ssh.RealSshSession logTailRecoverableFailure
+INFO: [issue239-tail-recover] tail(/agent.jsonl) ended on transport drop; reconnect path will resume on next attach: IllegalStateException: Not connected
+Aug 18, 2026 9:44:50 PM com.pocketshell.core.ssh.RealSshSession logTailRecoverableFailure
+INFO: [issue239-tail-recover] tail(/agent.jsonl) ended on transport drop; reconnect path will resume on next attach: IOException: generic transport I/O failure
+Aug 18, 2026 9:44:50 PM com.pocketshell.core.ssh.RealSshSession logTailRecoverableFailure
+INFO: [issue239-tail-recover] tail(/agent.jsonl) ended on transport drop; reconnect path will resume on next attach: ConnectionException: Software caused connection abort
+Aug 18, 2026 9:44:50 PM com.pocketshell.core.ssh.RealSshSession logTailRecoverableFailure
+INFO: [issue239-tail-recover] tail(/agent.jsonl) ended on transport drop; reconnect path will resume on next attach: SocketException: Software caused connection abort
+Aug 18, 2026 9:44:50 PM com.pocketshell.core.ssh.RealSshSession logTailRecoverableFailure
+INFO: [issue239-tail-recover] tail(/path) ended on transport drop; reconnect path will resume on next attach: SshException: SSH session is not connected
+]]></system-err>
+</testsuite>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.pocketshell.core.ssh.SshLeaseCoalescedCancelTypedTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-08-18T13:44:57.263Z" hostname="ARH-G4" time="0.02">
+  <properties/>
+  <testcase name="owner cancellation wakes a joined awaiter with the typed coalesced-cancel failure" classname="com.pocketshell.core.ssh.SshLeaseCoalescedCancelTypedTest" time="0.01"/>
+  <testcase name="a genuine owner connect failure is NOT reported as a coalesced-cancel" classname="com.pocketshell.core.ssh.SshLeaseCoalescedCancelTypedTest" time="0.004"/>
+  <testcase name="owner cancellation publishes a distinct ConnectCancelled close edge" classname="com.pocketshell.core.ssh.SshLeaseCoalescedCancelTypedTest" time="0.006"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

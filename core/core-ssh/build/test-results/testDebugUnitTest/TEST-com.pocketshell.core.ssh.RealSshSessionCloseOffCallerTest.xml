@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.pocketshell.core.ssh.RealSshSessionCloseOffCallerTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-08-18T13:44:46.406Z" hostname="ARH-G4" time="0.013">
+  <properties/>
+  <testcase name="close is idempotent and drives exactly one teardown" classname="com.pocketshell.core.ssh.RealSshSessionCloseOffCallerTest" time="0.004"/>
+  <testcase name="close returns to the caller without parking for the wedged transport disconnect" classname="com.pocketshell.core.ssh.RealSshSessionCloseOffCallerTest" time="0.004"/>
+  <testcase name="lease disconnect returns to the caller without parking on a wedged transport" classname="com.pocketshell.core.ssh.RealSshSessionCloseOffCallerTest" time="0.005"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

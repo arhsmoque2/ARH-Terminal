@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.pocketshell.core.ssh.TransportDispatcherTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-08-18T13:44:57.999Z" hostname="ARH-G4" time="0.436">
+  <properties/>
+  <testcase name="disconnect runs as the final op after in-flight ops drain" classname="com.pocketshell.core.ssh.TransportDispatcherTest" time="0.163"/>
+  <testcase name="concurrent ops never overlap - serialised one at a time" classname="com.pocketshell.core.ssh.TransportDispatcherTest" time="0.166"/>
+  <testcase name="blocking dispatch is serialised with suspending run" classname="com.pocketshell.core.ssh.TransportDispatcherTest" time="0.101"/>
+  <testcase name="op submitted after close is rejected before touching the transport" classname="com.pocketshell.core.ssh.TransportDispatcherTest" time="0.002"/>
+  <testcase name="closeAndAwaitDrain is idempotent" classname="com.pocketshell.core.ssh.TransportDispatcherTest" time="0.002"/>
+  <testcase name="ops run in submission order" classname="com.pocketshell.core.ssh.TransportDispatcherTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

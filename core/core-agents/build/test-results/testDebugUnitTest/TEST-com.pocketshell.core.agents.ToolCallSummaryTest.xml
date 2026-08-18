@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.pocketshell.core.agents.ToolCallSummaryTest" tests="16" skipped="0" failures="0" errors="0" timestamp="2026-08-18T13:42:56.261Z" hostname="ARH-G4" time="0.021">
+  <properties/>
+  <testcase name="webFetchShortensLongUrlsToHost" classname="com.pocketshell.core.agents.ToolCallSummaryTest" time="0.001"/>
+  <testcase name="unknownToolUsesNamePlusInputPreview" classname="com.pocketshell.core.agents.ToolCallSummaryTest" time="0.001"/>
+  <testcase name="bashTruncatesLongCommands" classname="com.pocketshell.core.agents.ToolCallSummaryTest" time="0.001"/>
+  <testcase name="readShortensLongPathsToBasename" classname="com.pocketshell.core.agents.ToolCallSummaryTest" time="0.0"/>
+  <testcase name="editTrimsLongPathsToBasename" classname="com.pocketshell.core.agents.ToolCallSummaryTest" time="0.005"/>
+  <testcase name="bashSurfacesCommandTruncatedAtSixtyChars" classname="com.pocketshell.core.agents.ToolCallSummaryTest" time="0.001"/>
+  <testcase name="editShowsLineDiffSummary" classname="com.pocketshell.core.agents.ToolCallSummaryTest" time="0.0"/>
+  <testcase name="readAppendsLineRange" classname="com.pocketshell.core.agents.ToolCallSummaryTest" time="0.004"/>
+  <testcase name="globShowsPatternAlone" classname="com.pocketshell.core.agents.ToolCallSummaryTest" time="0.001"/>
+  <testcase name="webFetchKeepsShortUrlsIntact" classname="com.pocketshell.core.agents.ToolCallSummaryTest" time="0.0"/>
+  <testcase name="grepShowsPatternAndTarget" classname="com.pocketshell.core.agents.ToolCallSummaryTest" time="0.001"/>
+  <testcase name="toleratesInvalidJsonInBashInput" classname="com.pocketshell.core.agents.ToolCallSummaryTest" time="0.001"/>
+  <testcase name="writeShowsLineCount" classname="com.pocketshell.core.agents.ToolCallSummaryTest" time="0.0"/>
+  <testcase name="taskShowsSubagentAndDescription" classname="com.pocketshell.core.agents.ToolCallSummaryTest" time="0.001"/>
+  <testcase name="readKeepsShortPathsIntact" classname="com.pocketshell.core.agents.ToolCallSummaryTest" time="0.001"/>
+  <testcase name="bashWithoutKnownFieldUsesRawInput" classname="com.pocketshell.core.agents.ToolCallSummaryTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

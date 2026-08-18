@@ -9,6 +9,7 @@ import com.pocketshell.core.agents.ConversationRole
 import com.pocketshell.core.ssh.KnownHostsPolicy
 import com.pocketshell.core.ssh.SshConnection
 import com.pocketshell.core.ssh.SshKey
+import com.pocketshell.core.ssh.SshSession
 import com.pocketshell.core.tmux.TmuxClient
 import com.pocketshell.core.tmux.TmuxClientFactory
 import com.pocketshell.core.tmux.protocol.ControlEvent
@@ -31,6 +32,7 @@ class SessionViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(SessionUiState())
     val uiState: StateFlow<SessionUiState> = _uiState.asStateFlow()
 
+    private var activeSshSession: SshSession? = null
     private var activeTmuxClient: TmuxClient? = null
     private val claudeParser = ClaudeCodeParser()
 
@@ -45,7 +47,8 @@ class SessionViewModel @Inject constructor(
 
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val key = SshKey.Pem(privateKeyPem.ifBlank { "-----BEGIN OPENSSH PRIVATE KEY-----\n..." })
+                val keyContent = if (privateKeyPem.isNotBlank()) privateKeyPem else "DUMMY_KEY"
+                val key = SshKey.Pem(keyContent)
                 val sshResult = SshConnection.connect(
                     host = currentState.host,
                     port = currentState.port,
@@ -61,31 +64,68 @@ class SessionViewModel @Inject constructor(
                 }
 
                 val session = sshResult.getOrThrow()
-                _uiState.update { it.copy(connectionStatus = ConnectionStatus.Connecting("Attaching psmux/tmux -CC session...")) }
-
-                val tmuxClient = tmuxFactory.create(session)
-                activeTmuxClient = tmuxClient
-                tmuxClient.connect()
+                activeSshSession = session
 
                 _uiState.update {
                     it.copy(
-                        connectionStatus = ConnectionStatus.Connected(
-                            sessionName = currentState.activeSessionName,
-                            host = currentState.host
-                        )
+                        connectionStatus = ConnectionStatus.Connected(host = currentState.host),
+                        isAttached = true
                     )
                 }
 
-                launch {
-                    tmuxClient.events.collect { event ->
-                        handleControlEvent(event)
-                    }
-                }
+                attachTmuxClient(session)
 
             } catch (e: Exception) {
                 _uiState.update { it.copy(connectionStatus = ConnectionStatus.Error(e.message ?: "Unknown error")) }
             }
         }
+    }
+
+    private fun attachTmuxClient(session: SshSession) {
+        val tmuxClient = tmuxFactory.create(session)
+        activeTmuxClient = tmuxClient
+
+        _uiState.update { it.copy(isAttached = true) }
+
+        viewModelScope.launch(Dispatchers.IO) {
+            tmuxClient.connect()
+            tmuxClient.events.collect { event ->
+                handleControlEvent(event)
+            }
+        }
+    }
+
+    fun toggleAttach(attach: Boolean) {
+        val session = activeSshSession ?: return
+        if (attach) {
+            attachTmuxClient(session)
+        } else {
+            viewModelScope.launch(Dispatchers.IO) {
+                activeTmuxClient?.sendCommand("detach-client")
+                activeTmuxClient = null
+                _uiState.update { it.copy(isAttached = false) }
+            }
+        }
+    }
+
+    fun switchSession(sessionName: String) {
+        if (sessionName == _uiState.value.activeSessionName) return
+        val session = activeSshSession ?: return
+        viewModelScope.launch(Dispatchers.IO) {
+            activeTmuxClient?.sendCommand("detach-client")
+            activeTmuxClient = null
+            _uiState.update { it.copy(activeSessionName = sessionName, panes = emptyList(), isAttached = true) }
+            attachTmuxClient(session)
+        }
+    }
+
+    fun createNewSession(sessionName: String) {
+        if (sessionName.isBlank()) return
+        _uiState.update {
+            val sessions = (it.availableSessions + sessionName.trim()).distinct()
+            it.copy(availableSessions = sessions)
+        }
+        switchSession(sessionName.trim())
     }
 
     private fun handleControlEvent(event: ControlEvent) {
@@ -208,6 +248,13 @@ class SessionViewModel @Inject constructor(
 
     fun disconnect() {
         activeTmuxClient = null
-        _uiState.update { it.copy(connectionStatus = ConnectionStatus.Disconnected, panes = emptyList()) }
+        activeSshSession = null
+        _uiState.update {
+            it.copy(
+                connectionStatus = ConnectionStatus.Disconnected,
+                panes = emptyList(),
+                isAttached = false
+            )
+        }
     }
 }

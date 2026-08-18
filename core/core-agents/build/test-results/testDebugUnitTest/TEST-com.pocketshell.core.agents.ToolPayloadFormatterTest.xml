@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.pocketshell.core.agents.ToolPayloadFormatterTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-08-18T13:42:56.285Z" hostname="ARH-G4" time="0.007">
+  <properties/>
+  <testcase name="emptyOutputStaysEmpty" classname="com.pocketshell.core.agents.ToolPayloadFormatterTest" time="0.0"/>
+  <testcase name="formatsReadInputFilePathReadably" classname="com.pocketshell.core.agents.ToolPayloadFormatterTest" time="0.0"/>
+  <testcase name="elidesLongOpaqueBase64DataFieldInGenericObject" classname="com.pocketshell.core.agents.ToolPayloadFormatterTest" time="0.001"/>
+  <testcase name="elidesRawNonJsonBase64Blob" classname="com.pocketshell.core.agents.ToolPayloadFormatterTest" time="0.002"/>
+  <testcase name="summarizesMixedTextAndImageBlocks" classname="com.pocketshell.core.agents.ToolPayloadFormatterTest" time="0.001"/>
+  <testcase name="summarizesTextContentBlock" classname="com.pocketshell.core.agents.ToolPayloadFormatterTest" time="0.0"/>
+  <testcase name="deterministicKeyOrderForNestedObjects" classname="com.pocketshell.core.agents.ToolPayloadFormatterTest" time="0.001"/>
+  <testcase name="collapsesBase64ImageOutputToImageSummary" classname="com.pocketshell.core.agents.ToolPayloadFormatterTest" time="0.001"/>
+  <testcase name="keepsSmallJsonInputReadableAndIntact" classname="com.pocketshell.core.agents.ToolPayloadFormatterTest" time="0.0"/>
+  <testcase name="passesNonJsonTextThroughUnchangedWhenShort" classname="com.pocketshell.core.agents.ToolPayloadFormatterTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

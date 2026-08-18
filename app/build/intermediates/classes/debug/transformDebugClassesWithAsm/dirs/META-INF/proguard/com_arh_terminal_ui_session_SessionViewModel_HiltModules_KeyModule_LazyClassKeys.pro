@@ -1,0 +1,1 @@
+-keep,allowobfuscation,allowshrinking class com.arh.terminal.ui.session.SessionViewModel

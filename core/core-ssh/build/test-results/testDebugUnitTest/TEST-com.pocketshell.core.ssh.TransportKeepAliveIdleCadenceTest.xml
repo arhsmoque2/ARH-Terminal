@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.pocketshell.core.ssh.TransportKeepAliveIdleCadenceTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-08-18T13:45:00.778Z" hostname="ARH-G4" time="0.006">
+  <properties/>
+  <testcase name="deadPeerAfterMidSleepActivityIsDeclaredWithinCountMaxIntervals" classname="com.pocketshell.core.ssh.TransportKeepAliveIdleCadenceTest" time="0.003"/>
+  <testcase name="fullyIdleLinkIsPingedOnTheTrueIntervalCadenceNotEveryOtherInterval" classname="com.pocketshell.core.ssh.TransportKeepAliveIdleCadenceTest" time="0.002"/>
+  <testcase name="idleLinkIsPingedWithinOneIntervalOfItsLastRealActivity" classname="com.pocketshell.core.ssh.TransportKeepAliveIdleCadenceTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

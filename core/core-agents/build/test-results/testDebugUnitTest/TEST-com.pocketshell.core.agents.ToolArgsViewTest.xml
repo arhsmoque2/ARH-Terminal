@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.pocketshell.core.agents.ToolArgsViewTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-08-18T13:42:56.230Z" hostname="ARH-G4" time="0.027">
+  <properties/>
+  <testcase name="deterministicAcrossCalls" classname="com.pocketshell.core.agents.ToolArgsViewTest" time="0.006"/>
+  <testcase name="objectWithNoCommandStillRendersLabeledFields" classname="com.pocketshell.core.agents.ToolArgsViewTest" time="0.0"/>
+  <testcase name="emptyObjectDegradesToRaw" classname="com.pocketshell.core.agents.ToolArgsViewTest" time="0.001"/>
+  <testcase name="plainTextArgsDegradeToRaw" classname="com.pocketshell.core.agents.ToolArgsViewTest" time="0.0"/>
+  <testcase name="base64BlobFieldIsElidedNeverDumped" classname="com.pocketshell.core.agents.ToolArgsViewTest" time="0.013"/>
+  <testcase name="codexExecCommandSurfacesCommandAndLabeledFields" classname="com.pocketshell.core.agents.ToolArgsViewTest" time="0.002"/>
+  <testcase name="nonObjectJsonArrayDegradesToRaw" classname="com.pocketshell.core.agents.ToolArgsViewTest" time="0.0"/>
+  <testcase name="argvArrayCommandIsJoinedIntoOneLine" classname="com.pocketshell.core.agents.ToolArgsViewTest" time="0.001"/>
+  <testcase name="nestedObjectFieldIsPrettyPrintedNotBlobbed" classname="com.pocketshell.core.agents.ToolArgsViewTest" time="0.0"/>
+  <testcase name="malformedJsonDegradesToRaw" classname="com.pocketshell.core.agents.ToolArgsViewTest" time="0.001"/>
+  <testcase name="claudeBashCommandKeyIsAlsoStructured" classname="com.pocketshell.core.agents.ToolArgsViewTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

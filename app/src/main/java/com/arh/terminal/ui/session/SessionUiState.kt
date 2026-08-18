@@ -21,7 +21,7 @@ data class PaneData(
 sealed interface ConnectionStatus {
     data object Disconnected : ConnectionStatus
     data class Connecting(val message: String) : ConnectionStatus
-    data class Connected(val sessionName: String, val host: String) : ConnectionStatus
+    data class Connected(val host: String) : ConnectionStatus
     data class Error(val message: String) : ConnectionStatus
 }
 
@@ -31,7 +31,9 @@ data class SessionUiState(
     val host: String = "127.0.0.1",
     val port: Int = 22,
     val username: String = "Administrator",
+    val isAttached: Boolean = true,
     val activeSessionName: String = "arh-agent",
+    val availableSessions: List<String> = listOf("arh-agent", "build-runner", "scratchpad"),
     val viewMode: ViewMode = ViewMode.AgentChat,
     val panes: List<PaneData> = emptyList(),
     val selectedPaneId: String? = null,
