@@ -1,7 +1,10 @@
 package com.arh.terminal.ui.session
 
 import androidx.compose.runtime.Immutable
+import com.arh.terminal.data.profiles.ConnectionProfile
 import com.arh.terminal.ui.conversation.AgentTurn
+import com.arh.terminal.util.NetworkStatus
+import com.arh.terminal.util.NetworkType
 
 enum class ViewMode {
     AgentChat,
@@ -34,6 +37,9 @@ data class SessionUiState(
     val isAttached: Boolean = true,
     val activeSessionName: String = "arh-agent",
     val availableSessions: List<String> = listOf("arh-agent", "build-runner", "scratchpad"),
+    val profiles: List<ConnectionProfile> = emptyList(),
+    val selectedProfileId: String? = "default-win-box",
+    val networkStatus: NetworkStatus = NetworkStatus(isConnected = true, type = NetworkType.Wifi),
     val viewMode: ViewMode = ViewMode.AgentChat,
     val panes: List<PaneData> = emptyList(),
     val selectedPaneId: String? = null,

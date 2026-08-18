@@ -2,7 +2,10 @@ package com.arh.terminal.ui.session
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.arh.terminal.data.profiles.ConnectionProfile
+import com.arh.terminal.data.profiles.ProfileRepository
 import com.arh.terminal.ui.conversation.AgentTurn
+import com.arh.terminal.util.NetworkMonitor
 import com.pocketshell.core.agents.ClaudeCodeParser
 import com.pocketshell.core.agents.ConversationEvent
 import com.pocketshell.core.agents.ConversationRole
@@ -26,7 +29,9 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SessionViewModel @Inject constructor(
-    private val tmuxFactory: TmuxClientFactory
+    private val tmuxFactory: TmuxClientFactory,
+    private val profileRepository: ProfileRepository,
+    private val networkMonitor: NetworkMonitor
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SessionUiState())
@@ -35,6 +40,52 @@ class SessionViewModel @Inject constructor(
     private var activeSshSession: SshSession? = null
     private var activeTmuxClient: TmuxClient? = null
     private val claudeParser = ClaudeCodeParser()
+    private var lastUsedKeyPem: String = ""
+
+    init {
+        viewModelScope.launch {
+            profileRepository.profiles.collect { profilesList ->
+                _uiState.update { it.copy(profiles = profilesList) }
+            }
+        }
+
+        viewModelScope.launch {
+            networkMonitor.status.collect { netStatus ->
+                val wasDisconnected = !_uiState.value.networkStatus.isConnected
+                _uiState.update { it.copy(networkStatus = netStatus) }
+
+                // Auto-reconnect if network comes back online while in Connected state
+                if (wasDisconnected && netStatus.isConnected && activeSshSession == null && _uiState.value.connectionStatus is ConnectionStatus.Error) {
+                    connect(lastUsedKeyPem)
+                }
+            }
+        }
+    }
+
+    fun selectProfile(profile: ConnectionProfile) {
+        _uiState.update {
+            it.copy(
+                selectedProfileId = profile.id,
+                host = profile.host,
+                port = profile.port,
+                username = profile.username,
+                activeSessionName = profile.defaultSession
+            )
+        }
+    }
+
+    fun saveCurrentAsProfile(name: String) {
+        if (name.isBlank()) return
+        val current = _uiState.value
+        val newProfile = ConnectionProfile(
+            name = name.trim(),
+            host = current.host,
+            port = current.port,
+            username = current.username,
+            defaultSession = current.activeSessionName
+        )
+        profileRepository.addProfile(newProfile)
+    }
 
     fun updateHost(host: String) = _uiState.update { it.copy(host = host) }
     fun updateUsername(user: String) = _uiState.update { it.copy(username = user) }
@@ -42,6 +93,7 @@ class SessionViewModel @Inject constructor(
     fun setViewMode(mode: ViewMode) = _uiState.update { it.copy(viewMode = mode) }
 
     fun connect(privateKeyPem: String = "") {
+        lastUsedKeyPem = privateKeyPem
         val currentState = _uiState.value
         _uiState.update { it.copy(connectionStatus = ConnectionStatus.Connecting("Opening SSH to ${currentState.host}...")) }
 

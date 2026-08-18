@@ -1,5 +1,7 @@
 package com.arh.terminal.ui.session
 
+import com.arh.terminal.data.profiles.ProfileRepository
+import com.arh.terminal.util.NetworkMonitor
 import com.pocketshell.core.tmux.TmuxClientFactory
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
@@ -17,12 +19,14 @@ class SessionViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
     private val factory: TmuxClientFactory = mockk(relaxed = true)
+    private val profileRepository: ProfileRepository = ProfileRepository()
+    private val networkMonitor: NetworkMonitor = mockk(relaxed = true)
     private lateinit var viewModel: SessionViewModel
 
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
-        viewModel = SessionViewModel(factory)
+        viewModel = SessionViewModel(factory, profileRepository, networkMonitor)
     }
 
     @After

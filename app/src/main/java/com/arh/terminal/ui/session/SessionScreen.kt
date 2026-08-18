@@ -2,7 +2,6 @@ package com.arh.terminal.ui.session
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,6 +21,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.LinkOff
@@ -29,6 +29,8 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Terminal
+import androidx.compose.material.icons.filled.Wifi
+import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -39,8 +41,8 @@ import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Tab
@@ -60,10 +62,11 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.arh.terminal.ui.conversation.AgentTurnCard
+import com.arh.terminal.data.profiles.ConnectionProfile
 import com.arh.terminal.ui.components.FloatingApprovalHud
 import com.arh.terminal.ui.components.QuickActionBar
-import com.arh.terminal.ui.components.QuickKey
+import com.arh.terminal.ui.conversation.AgentTurnCard
+import com.arh.terminal.util.NetworkType
 
 @Composable
 fun SessionScreen(
@@ -97,13 +100,37 @@ fun SessionScreen(
                 )
             }
 
-            if (state.connectionStatus is ConnectionStatus.Connected) {
-                IconButton(onClick = { viewModel.disconnect() }) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                // Live Network Status Badge
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .background(Color(0xFF1E293B), RoundedCornerShape(12.dp))
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                ) {
                     Icon(
-                        imageVector = Icons.Default.PowerSettingsNew,
-                        contentDescription = "Disconnect",
-                        tint = MaterialTheme.colorScheme.error
+                        imageVector = if (state.networkStatus.isConnected) Icons.Default.Wifi else Icons.Default.WifiOff,
+                        contentDescription = null,
+                        tint = if (state.networkStatus.isConnected) Color(0xFF10B981) else Color(0xFFEF4444),
+                        modifier = Modifier.size(14.dp)
                     )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = if (state.networkStatus.isConnected) state.networkStatus.type.name else "Offline",
+                        fontSize = 11.sp,
+                        color = Color(0xFF94A3B8)
+                    )
+                }
+
+                if (state.connectionStatus is ConnectionStatus.Connected) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    IconButton(onClick = { viewModel.disconnect() }) {
+                        Icon(
+                            imageVector = Icons.Default.PowerSettingsNew,
+                            contentDescription = "Disconnect",
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    }
                 }
             }
         }
@@ -113,6 +140,8 @@ fun SessionScreen(
                 ConnectionSetupCard(
                     state = state,
                     error = (status as? ConnectionStatus.Error)?.message,
+                    onSelectProfile = viewModel::selectProfile,
+                    onSaveProfile = viewModel::saveCurrentAsProfile,
                     onHostChange = viewModel::updateHost,
                     onUserChange = viewModel::updateUsername,
                     onConnect = { password -> viewModel.connect(password) }
@@ -155,11 +184,15 @@ fun SessionScreen(
 private fun ConnectionSetupCard(
     state: SessionUiState,
     error: String?,
+    onSelectProfile: (ConnectionProfile) -> Unit,
+    onSaveProfile: (String) -> Unit,
     onHostChange: (String) -> Unit,
     onUserChange: (String) -> Unit,
     onConnect: (String) -> Unit
 ) {
     var password by remember { mutableStateOf("") }
+    var showSaveProfile by remember { mutableStateOf(false) }
+    var profileNameInput by remember { mutableStateOf("") }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -175,6 +208,32 @@ private fun ConnectionSetupCard(
                 text = "Connect to Dev Machine (psmux / tmux -CC)",
                 style = MaterialTheme.typography.titleMedium
             )
+
+            // Saved Profiles Horizontal Chips
+            if (state.profiles.isNotEmpty()) {
+                Text(
+                    text = "Saved Profiles",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    state.profiles.forEach { profile ->
+                        FilterChip(
+                            selected = profile.id == state.selectedProfileId,
+                            onClick = { onSelectProfile(profile) },
+                            label = { Text(profile.name) },
+                            leadingIcon = {
+                                Icon(Icons.Default.Bookmark, contentDescription = null, modifier = Modifier.size(14.dp))
+                            }
+                        )
+                    }
+                }
+            }
 
             if (error != null) {
                 Text(
@@ -205,14 +264,51 @@ private fun ConnectionSetupCard(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Button(
-                onClick = { onConnect(password) },
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Icon(Icons.Default.PlayArrow, contentDescription = "Connect")
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Connect (psmux -CC)")
+                Button(
+                    onClick = { onConnect(password) },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                ) {
+                    Icon(Icons.Default.PlayArrow, contentDescription = "Connect")
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Connect (psmux -CC)")
+                }
+
+                OutlinedButton(
+                    onClick = { showSaveProfile = !showSaveProfile }
+                ) {
+                    Icon(Icons.Default.Bookmark, contentDescription = "Save Profile")
+                }
+            }
+
+            AnimatedVisibility(visible = showSaveProfile) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedTextField(
+                        value = profileNameInput,
+                        onValueChange = { profileNameInput = it },
+                        label = { Text("Profile Name (e.g. My Laptop)") },
+                        modifier = Modifier.weight(1f)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(
+                        onClick = {
+                            if (profileNameInput.isNotBlank()) {
+                                onSaveProfile(profileNameInput)
+                                profileNameInput = ""
+                                showSaveProfile = false
+                            }
+                        }
+                    ) {
+                        Text("Save")
+                    }
+                }
             }
         }
     }
@@ -253,7 +349,6 @@ private fun ConnectedSessionView(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        // Live pulse indicator (Green when attached, Grey when parked)
                         Box(
                             modifier = Modifier
                                 .size(10.dp)
@@ -275,7 +370,6 @@ private fun ConnectedSessionView(
                         }
                     }
 
-                    // Attach / Detach Toggle Slider Switch
                     Switch(
                         checked = state.isAttached,
                         onCheckedChange = { onToggleAttach(it) },
@@ -293,7 +387,6 @@ private fun ConnectedSessionView(
                     )
                 }
 
-                // Session Switcher Horizontal Chips
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(
                     modifier = Modifier
