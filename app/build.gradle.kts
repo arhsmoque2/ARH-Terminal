@@ -44,6 +44,7 @@ android {
 dependencies {
     implementation(project(":core:core-ssh"))
     implementation(project(":core:core-tmux"))
+    implementation(project(":core:core-agents"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

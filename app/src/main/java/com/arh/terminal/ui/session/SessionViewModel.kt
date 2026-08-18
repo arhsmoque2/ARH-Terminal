@@ -2,6 +2,11 @@ package com.arh.terminal.ui.session
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.arh.terminal.ui.conversation.AgentTurn
+import com.pocketshell.core.agents.AgentKind
+import com.pocketshell.core.agents.ClaudeCodeParser
+import com.pocketshell.core.agents.ConversationEvent
+import com.pocketshell.core.agents.ConversationRole
 import com.pocketshell.core.ssh.SshConnection
 import com.pocketshell.core.tmux.TmuxClient
 import com.pocketshell.core.tmux.TmuxClientFactory
@@ -14,6 +19,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.nio.charset.StandardCharsets
+import java.util.UUID
 import javax.inject.Inject
 
 @HiltViewModel
@@ -25,10 +31,12 @@ class SessionViewModel @Inject constructor(
     val uiState: StateFlow<SessionUiState> = _uiState.asStateFlow()
 
     private var activeTmuxClient: TmuxClient? = null
+    private val claudeParser = ClaudeCodeParser()
 
     fun updateHost(host: String) = _uiState.update { it.copy(host = host) }
     fun updateUsername(user: String) = _uiState.update { it.copy(username = user) }
     fun updatePort(port: Int) = _uiState.update { it.copy(port = port) }
+    fun setViewMode(mode: ViewMode) = _uiState.update { it.copy(viewMode = mode) }
 
     fun connect(password: String = "") {
         val currentState = _uiState.value
@@ -36,7 +44,6 @@ class SessionViewModel @Inject constructor(
 
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                // 1. Establish SSH connection
                 val sshResult = SshConnection.connect(
                     host = currentState.host,
                     port = currentState.port,
@@ -53,7 +60,6 @@ class SessionViewModel @Inject constructor(
                 val session = sshResult.getOrThrow()
                 _uiState.update { it.copy(connectionStatus = ConnectionStatus.Connecting("Attaching psmux/tmux -CC session...")) }
 
-                // 2. Attach psmux / tmux -CC control mode
                 val tmuxClient = tmuxFactory.create(session)
                 activeTmuxClient = tmuxClient
                 tmuxClient.connect()
@@ -67,7 +73,6 @@ class SessionViewModel @Inject constructor(
                     )
                 }
 
-                // 3. Listen to structured tmux/psmux control events
                 launch {
                     tmuxClient.events.collect { event ->
                         handleControlEvent(event)
@@ -112,11 +117,14 @@ class SessionViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             client.outputFor(paneId).collect { bytes ->
                 val text = String(bytes, StandardCharsets.UTF_8)
+                val turns = parseOutputTurns(text)
+
                 _uiState.update { state ->
                     val updatedPanes = state.panes.map { p ->
                         if (p.paneId == paneId) {
                             val newHistory = (p.outputHistory + text).takeLast(200)
-                            p.copy(outputHistory = newHistory)
+                            val newTurns = p.agentTurns + turns
+                            p.copy(outputHistory = newHistory, agentTurns = newTurns)
                         } else p
                     }
                     state.copy(panes = updatedPanes)
@@ -126,23 +134,71 @@ class SessionViewModel @Inject constructor(
         }
     }
 
+    private fun parseOutputTurns(text: String): List<AgentTurn> {
+        val turns = mutableListOf<AgentTurn>()
+        val lines = text.lines()
+        for (line in lines) {
+            val events = claudeParser.parseLine(line)
+            for (evt in events) {
+                when (evt) {
+                    is ConversationEvent.Message -> {
+                        if (evt.role == ConversationRole.User) {
+                            turns.add(AgentTurn.UserMessage(evt.id, evt.timestampMillis, evt.text))
+                        } else {
+                            turns.add(AgentTurn.AssistantMessage(evt.id, evt.timestampMillis, evt.agent, evt.text))
+                        }
+                    }
+                    is ConversationEvent.ToolCall -> {
+                        turns.add(AgentTurn.ToolInvocation(evt.id, evt.timestampMillis, evt.toolName, evt.arguments))
+                    }
+                    is ConversationEvent.ToolResult -> {
+                        val lastIdx = turns.indexOfLast { it is AgentTurn.ToolInvocation }
+                        if (lastIdx >= 0) {
+                            val prev = turns[lastIdx] as AgentTurn.ToolInvocation
+                            turns[lastIdx] = prev.copy(output = evt.output)
+                        }
+                    }
+                    else -> Unit
+                }
+            }
+        }
+        return turns
+    }
+
     private fun detectApprovalPrompts(text: String) {
         if (text.contains("[y/n]", ignoreCase = true) || text.contains("Approve command:", ignoreCase = true)) {
             _uiState.update { it.copy(pendingApprovalCommand = text.trim()) }
         }
     }
 
-    fun sendCommand(command: String) {
-        val client = activeTmuxClient ?: return
+    fun sendPrompt(prompt: String) {
+        if (prompt.isBlank()) return
+        val userTurn = AgentTurn.UserMessage(
+            id = UUID.randomUUID().toString(),
+            timestamp = System.currentTimeMillis(),
+            text = prompt
+        )
         val targetPane = _uiState.value.selectedPaneId ?: "%0"
+        _uiState.update { state ->
+            val updatedPanes = state.panes.map { p ->
+                if (p.paneId == targetPane) p.copy(agentTurns = p.agentTurns + userTurn) else p
+            }
+            state.copy(panes = updatedPanes)
+        }
+
+        val client = activeTmuxClient ?: return
         viewModelScope.launch(Dispatchers.IO) {
-            client.sendCommand("send-keys -t $targetPane \"$command\" Enter")
+            client.sendCommand("send-keys -t $targetPane \"$prompt\" Enter")
         }
     }
 
     fun approvePrompt(approve: Boolean) {
         val reply = if (approve) "y" else "n"
-        sendCommand(reply)
+        val client = activeTmuxClient ?: return
+        val targetPane = _uiState.value.selectedPaneId ?: "%0"
+        viewModelScope.launch(Dispatchers.IO) {
+            client.sendCommand("send-keys -t $targetPane \"$reply\" Enter")
+        }
         _uiState.update { it.copy(pendingApprovalCommand = null) }
     }
 

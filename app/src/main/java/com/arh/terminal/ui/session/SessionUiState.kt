@@ -1,13 +1,20 @@
 package com.arh.terminal.ui.session
 
 import androidx.compose.runtime.Immutable
+import com.arh.terminal.ui.conversation.AgentTurn
+
+enum class ViewMode {
+    AgentChat,
+    RawTerminal
+}
 
 @Immutable
 data class PaneData(
     val paneId: String,
     val windowId: String,
     val title: String,
-    val outputHistory: List<String> = emptyList()
+    val outputHistory: List<String> = emptyList(),
+    val agentTurns: List<AgentTurn> = emptyList()
 )
 
 @Immutable
@@ -25,6 +32,7 @@ data class SessionUiState(
     val port: Int = 22,
     val username: String = "Administrator",
     val activeSessionName: String = "arh-agent",
+    val viewMode: ViewMode = ViewMode.AgentChat,
     val panes: List<PaneData> = emptyList(),
     val selectedPaneId: String? = null,
     val pendingApprovalCommand: String? = null

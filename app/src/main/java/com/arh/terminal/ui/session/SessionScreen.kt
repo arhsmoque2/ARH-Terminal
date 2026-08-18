@@ -1,6 +1,5 @@
 package com.arh.terminal.ui.session
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,8 +14,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material.icons.filled.Send
@@ -29,7 +27,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
@@ -46,6 +43,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.arh.terminal.ui.conversation.AgentTurnCard
 
 @Composable
 fun SessionScreen(
@@ -120,8 +118,9 @@ fun SessionScreen(
             is ConnectionStatus.Connected -> {
                 ConnectedSessionView(
                     state = state,
-                    onSend = viewModel::sendCommand,
-                    onApprove = viewModel::approvePrompt
+                    onSend = viewModel::sendPrompt,
+                    onApprove = viewModel::approvePrompt,
+                    onViewModeChange = viewModel::setViewMode
                 )
             }
         }
@@ -199,92 +198,101 @@ private fun ConnectionSetupCard(
 private fun ConnectedSessionView(
     state: SessionUiState,
     onSend: (String) -> Unit,
-    onApprove: (Boolean) -> Unit
+    onApprove: (Boolean) -> Unit,
+    onViewModeChange: (ViewMode) -> Unit
 ) {
-    var inputCommand by remember { mutableStateOf("") }
+    var inputPrompt by remember { mutableStateOf("") }
     val activePane = state.panes.find { it.paneId == state.selectedPaneId } ?: state.panes.firstOrNull()
 
     Column(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        // Floating Prompt Approval HUD if agent requests permission
-        if (state.pendingApprovalCommand != null) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-            ) {
-                Column(modifier = Modifier.padding(12.dp)) {
-                    Text(
-                        text = "⚡ Agent Action Confirmation",
-                        style = MaterialTheme.typography.titleSmall
-                    )
-                    Text(
-                        text = state.pendingApprovalCommand,
-                        style = MaterialTheme.typography.bodySmall,
-                        fontFamily = FontFamily.Monospace
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(
-                            onClick = { onApprove(true) },
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                        ) {
-                            Icon(Icons.Default.Check, contentDescription = "Approve")
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Approve (Y)")
+        // View Mode Switcher: Agent Chat vs Raw Terminal
+        TabRow(
+            selectedTabIndex = if (state.viewMode == ViewMode.AgentChat) 0 else 1
+        ) {
+            Tab(
+                selected = state.viewMode == ViewMode.AgentChat,
+                onClick = { onViewModeChange(ViewMode.AgentChat) },
+                text = { Text("Agent Chat") },
+                icon = { Icon(Icons.Default.Chat, contentDescription = null) }
+            )
+            Tab(
+                selected = state.viewMode == ViewMode.RawTerminal,
+                onClick = { onViewModeChange(ViewMode.RawTerminal) },
+                text = { Text("Terminal Feed") },
+                icon = { Icon(Icons.Default.Terminal, contentDescription = null) }
+            )
+        }
+
+        // View Content
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+        ) {
+            if (state.viewMode == ViewMode.AgentChat) {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    if (activePane?.agentTurns.isNullOrEmpty()) {
+                        item {
+                            Text(
+                                text = "Waiting for agent activity in ${state.activeSessionName}...",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.padding(16.dp)
+                            )
                         }
-                        OutlinedButton(onClick = { onApprove(false) }) {
-                            Icon(Icons.Default.Close, contentDescription = "Reject")
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Reject (N)")
+                    } else {
+                        items(activePane.agentTurns) { turn ->
+                            AgentTurnCard(turn = turn, onApproveTool = { _, approve -> onApprove(approve) })
+                        }
+                    }
+                }
+            } else {
+                Card(
+                    modifier = Modifier.fillMaxSize(),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF0F0F0F)),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(8.dp)
+                    ) {
+                        items(activePane?.outputHistory ?: emptyList()) { chunk ->
+                            Text(
+                                text = chunk,
+                                color = Color(0xFF80D8FF),
+                                fontSize = 12.sp,
+                                fontFamily = FontFamily.Monospace
+                            )
                         }
                     }
                 }
             }
         }
 
-        // Live Output Feed
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF0F0F0F)),
-            shape = RoundedCornerShape(8.dp)
-        ) {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(8.dp)
-            ) {
-                items(activePane?.outputHistory ?: emptyList()) { chunk ->
-                    Text(
-                        text = chunk,
-                        color = Color(0xFF80D8FF),
-                        fontSize = 12.sp,
-                        fontFamily = FontFamily.Monospace
-                    )
-                }
-            }
-        }
-
-        // Send Command Row
+        // Send Prompt Input Row
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             OutlinedTextField(
-                value = inputCommand,
-                onValueChange = { inputCommand = it },
-                label = { Text("Send prompt to agent / shell...") },
+                value = inputPrompt,
+                onValueChange = { inputPrompt = it },
+                label = { Text("Type prompt or /slash command...") },
                 modifier = Modifier.weight(1f)
             )
             Spacer(modifier = Modifier.width(8.dp))
             IconButton(
                 onClick = {
-                    if (inputCommand.isNotBlank()) {
-                        onSend(inputCommand)
-                        inputCommand = ""
+                    if (inputPrompt.isNotBlank()) {
+                        onSend(inputPrompt)
+                        inputPrompt = ""
                     }
                 }
             ) {

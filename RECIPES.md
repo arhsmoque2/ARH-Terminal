@@ -25,11 +25,17 @@
 ---
 
 ## 🔗 Server Host Connection (psmux)
-On Windows dev machine:
+
+### 1. Launch a persistent psmux session on Windows
 ```powershell
 psmux new -s arh-agent
 ```
-Attach from ARH-Terminal:
-```bash
-psmux -CC attach -t arh-agent
+
+### 2. Start Claude Code or Codex inside the session
+```powershell
+claude
 ```
+
+### 3. Connect from ARH-Terminal
+* Open the app, enter your PC's IP / Hostname, and tap **Connect (psmux -CC)**.
+* Switch between **Agent Chat** and **Terminal Feed** via the top tabs.
