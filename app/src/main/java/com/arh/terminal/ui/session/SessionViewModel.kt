@@ -236,6 +236,14 @@ class SessionViewModel @Inject constructor(
         }
     }
 
+    fun sendRawKey(rawSequence: String) {
+        val client = activeTmuxClient ?: return
+        val targetPane = _uiState.value.selectedPaneId ?: "%0"
+        viewModelScope.launch(Dispatchers.IO) {
+            client.sendCommand("send-keys -t $targetPane \"$rawSequence\"")
+        }
+    }
+
     fun approvePrompt(approve: Boolean) {
         val reply = if (approve) "y" else "n"
         val client = activeTmuxClient ?: return

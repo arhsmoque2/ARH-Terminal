@@ -61,6 +61,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.arh.terminal.ui.conversation.AgentTurnCard
+import com.arh.terminal.ui.components.FloatingApprovalHud
+import com.arh.terminal.ui.components.QuickActionBar
+import com.arh.terminal.ui.components.QuickKey
 
 @Composable
 fun SessionScreen(
@@ -135,6 +138,7 @@ fun SessionScreen(
             is ConnectionStatus.Connected -> {
                 ConnectedSessionView(
                     state = state,
+                    viewModel = viewModel,
                     onSend = viewModel::sendPrompt,
                     onApprove = viewModel::approvePrompt,
                     onViewModeChange = viewModel::setViewMode,
@@ -217,6 +221,7 @@ private fun ConnectionSetupCard(
 @Composable
 private fun ConnectedSessionView(
     state: SessionUiState,
+    viewModel: SessionViewModel,
     onSend: (String) -> Unit,
     onApprove: (Boolean) -> Unit,
     onViewModeChange: (ViewMode) -> Unit,
@@ -447,6 +452,19 @@ private fun ConnectedSessionView(
                     }
                 }
             }
+        }
+
+        // --- ⚡ Moggsh-style Floating Approval HUD ---
+        FloatingApprovalHud(
+            pendingCommand = state.pendingApprovalCommand,
+            onApprove = onApprove
+        )
+
+        // --- ⌨️ Quick-Action Extended Key Bar ---
+        if (state.isAttached) {
+            QuickActionBar(
+                onSendKey = { key -> viewModel.sendRawKey(key.rawSequence) }
+            )
         }
 
         // Send Prompt Input Row
