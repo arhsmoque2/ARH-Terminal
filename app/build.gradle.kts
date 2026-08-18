@@ -42,6 +42,9 @@ android {
 }
 
 dependencies {
+    implementation(project(":core:core-ssh"))
+    implementation(project(":core:core-tmux"))
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -57,6 +60,10 @@ dependencies {
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
     implementation(libs.hilt.navigation.compose)
+
+    // Coroutines
+    implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.kotlinx.coroutines.android)
 
     // Testing
     testImplementation(libs.junit)

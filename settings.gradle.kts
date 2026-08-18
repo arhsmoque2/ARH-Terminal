@@ -21,3 +21,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "ARH-Terminal"
 include(":app")
+include(":core:core-ssh")
+include(":core:core-tmux")
