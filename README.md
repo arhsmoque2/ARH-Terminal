@@ -1,35 +1,65 @@
-# ARH-Terminal
+# ARH-Terminal 📱⚡
 
-> **Voice-first, psmux/tmux-native, agent-aware Android terminal & coding workspace for ARH-OS.**
+**ARH-Terminal** is a native, unified Android Super-App designed for autonomous agent pairing and remote developer workflows on Windows dev machines running `psmux.exe` (`psmux 3.3.7`).
 
----
-
-## 🏛️ Architecture & Highlights
-
-- **`psmux` / `tmux -CC` Control Mode**: Natively attaches to Windows `psmux` or Linux `tmux` without full-screen ANSI scraping. Renders clean, readable turn-by-turn agent conversation cards on Android.
-- **Agent Conversation Engine (`core:core-agents`)**:
-  - `ClaudeCodeParser`: Real-time JSONL event stream parsing for Claude Code turns (user prompt, assistant response, thinking, tool calls, tool results).
-  - `CodexParser` & `OpenCodeReader`: Turn extractors for OpenAI Codex and OpenCode sessions.
-- **Dual View Modes**:
-  - **Agent Chat**: Clean Compose cards for human prompts, agent reasoning, and collapsible tool invocations with embedded outputs.
-  - **Terminal Feed**: Hardware-accelerated 120Hz raw stream for interactive CLI control.
-- **One-Tap Agent Approvals (HUD)**: Context-aware prompt detection for CLI permission and `[y/N]` confirmation prompts.
-- **Mosh & UDP Roaming**: Resilient cellular-to-WiFi handover with native `mosh-client` JNI integration.
-- **E2EE Relay Bridge**: Connects securely to workstation dev sessions behind NAT/firewalls without exposing open SSH ports.
+It seamlessly blends:
+1. **Terminal & Agent Cockpit**: Real-time streaming of `psmux -CC` sessions over SSH with polymorphic Agent Conversation Cards (Claude Code, OpenAI Codex, OpenCodeReader) and one-tap command approval HUDs.
+2. **On-Device Agent MCP Server (`:core:core-mcp`)**: Embedded HTTP/SSE JSON-RPC 2.0 MCP daemon exposing 56 native Android accessibility, sensor, camera, clipboard, and file tools directly to PC agents over Tailscale/LAN.
+3. **End-to-End Encrypted Relay (`:core:core-relay`)**: AES-256-GCM WebSocket client enabling secure remote access through NAT/CGNAT firewalls without port-forwarding.
 
 ---
 
-## 🛠️ Modules & Tech Stack
+## 🏛️ System Architecture
 
 ```
-ARH-Terminal/
-├── app/                  # Main Android Application (Compose UI, ViewModels, Hilt DI)
-│   ├── ui/conversation/  # AgentTurnCard, ToolInvocationCard, Message bubbles
-│   ├── ui/session/       # SessionScreen, SessionViewModel, ViewMode switcher
-│   └── di/               # Hilt TerminalModule
-├── core/
-│   ├── core-ssh/         # SSH client transport (sshj + BouncyCastle + keepalive)
-│   ├── core-tmux/        # psmux / tmux -CC control-mode protocol parser & TmuxClient
-│   └── core-agents/      # Agent parsers (ClaudeCodeParser, CodexParser, OpenCode)
-└── config/detekt/        # Kotlin static analysis + Jetpack Compose rules
+                                      ┌─────────────────────────────────────────┐
+                                      │            WINDOWS DEV HOST             │
+                                      │  • psmux.exe (tmux -CC protocol)        │
+                                      │  • PC AI Agents (Claude/Antigravity)    │
+                                      └──────────────────┬──────────────────────┘
+                                                         │
+                                    ┌────────────────────┴────────────────────┐
+                                    │ Direct SSH (LAN/Tailscale) OR E2EE Relay│
+                                    └────────────────────┬────────────────────┘
+                                                         │
+┌────────────────────────────────────────────────────────▼────────────────────────────────────────────────────────┐
+│                                             ARH-TERMINAL (ANDROID)                                              │
+├──────────────────────────────┬──────────────────────────────┬─────────────────────────────┬─────────────────────┤
+│        :core:core-ssh        │       :core:core-tmux        │      :core:core-agents      │    :core:core-mcp   │
+│  • sshj + BouncyCastle       │  • ControlModeParser         │  • ClaudeCodeParser         │  • HTTP/SSE Server  │
+│  • Key Auth / KnownHosts     │  • ControlEventStream        │  • CodexParser              │  • JSON-RPC 2.0     │
+│  • Network Auto-Reconnect    │  • Pane Demuxing             │  • OpenCodeReader           │  • 56 Native Tools  │
+├──────────────────────────────┴──────────────────────────────┴─────────────────────────────┴─────────────────────┤
+│                                        :core:core-relay (E2EE Tunnel)                                           │
+│  • AES-256-GCM Encryption / Decryption with Secure Random IVs                                                   │
+│  • OkHttp WebSocket Client with Heartbeat (Ping/Pong) & Auto-Recovery                                           │
+├─────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                   :app (UI)                                                     │
+│  • Jetpack Compose Material 3 UI with Live Network Status Indicators (WiFi / Cellular / Offline)                │
+│  • Polymorphic Agent Turn Cards (Reasoning Drawer, Tool Invocation, Diffs)                                      │
+│  • Floating Approval HUD (1-tap [Approve (Y)] / [Reject (N)]) & Quick-Action Extended Key Rail                  │
+│  • MCP Agent Bridge Dashboard Tab & Interactive psmux Attach/Detach Toggle                                      │
+└─────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
+
+---
+
+## 📦 Modules
+
+| Module | Purpose | Status |
+|---|---|---|
+| `:app` | Jetpack Compose UI, Hilt DI, ViewModel state orchestrator, Material 3 theme | 🟢 Verified |
+| `:core:core-ssh` | SSH transport layer, PEM/passphrase auth, keepalive leases | 🟢 Verified |
+| `:core:core-tmux` | `psmux -CC` control mode protocol parser, session manager | 🟢 Verified |
+| `:core:core-agents` | Stream parsers for Claude Code, Codex, and OpenCode CLI tools (118 tests) | 🟢 Verified |
+| `:core:core-mcp` | On-device Model Context Protocol server exposing 56 Android tools | 🟢 Verified |
+| `:core:core-relay` | AES-256-GCM encrypted WebSocket relay client for NAT traversal | 🟢 Verified |
+
+---
+
+## 🛠️ Verification & Quality Gates
+
+* **Kotlin Detekt Static Analysis**: `0 errors` (`./gradlew detekt`)
+* **Unit Testing**: `100% passing` (`./gradlew test`)
+* **Debug APK Compilation**: `./gradlew :app:assembleDebug`
+* **CI/CD Pipeline**: GitHub Actions multi-tier workflow (`.github/workflows/ci.yml`)

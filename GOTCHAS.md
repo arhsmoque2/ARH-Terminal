@@ -1,17 +1,18 @@
-# Gotchas & Failure Capsules
+# ARH-Terminal Gotchas & Failure Capsules 💡
 
-## 1. psmux Control Mode Protocol
-* **Symptom**: Raw ANSI escape garbage displayed instead of structured conversation cards.
-* **Root Cause**: Connecting via standard interactive shell instead of passing `-CC` control mode flag.
-* **Permanent Fix**: Ensure the bootstrap command specifies `psmux -CC attach -t <session> || psmux -CC new -s <session>`.
-* **Verification**: Verify `%output %1` control mode tokens are emitted during handshake.
+### 1. Android Base64 in JVM Unit Tests
+* **Symptom**: `NullPointerException` during unit test execution of cryptographic cipher routines.
+* **Root Cause**: `android.util.Base64` is an Android framework stub when running on host JVM test suites (`testDebugUnitTest`).
+* **Permanent Fix**: Use standard `java.util.Base64` (available on Android API 26+ and Java 8+) which runs identically in both Android runtime and JVM unit test runners.
+* **Verification**: `./gradlew :core:core-relay:test` passes with 0 errors.
 
-## 2. Agent JSONL Streaming vs Partial Chunks
-* **Symptom**: Agent messages get cut in half when receiving partial network buffers.
-* **Root Cause**: Reading raw byte packets as individual messages rather than buffering by newline delimiter.
-* **Permanent Fix**: `ClaudeCodeParser` operates strictly on completed lines (`text.lines()`), buffering unfinished fragments.
+### 2. Detekt Submodule Plugin Resolution under AGP 9.1+
+* **Symptom**: `Cannot add extension with name 'kotlin', as there is an extension already registered with that name.`
+* **Root Cause**: AGP 9.1+ embeds Kotlin Android plugins natively; applying `alias(libs.plugins.kotlin.android)` alongside `alias(libs.plugins.android.library)` creates a collision.
+* **Permanent Fix**: In submodules, apply only `alias(libs.plugins.android.library)` and `alias(libs.plugins.detekt)`.
+* **Verification**: `./gradlew detekt` executes cleanly across all 6 modules.
 
-## 3. Compose Recomposition in Terminal Feed
-* **Symptom**: Frame drops when terminal emits high-frequency output lines.
-* **Root Cause**: Unstable parameters triggering full composable tree recompositions.
-* **Permanent Fix**: Use `@Immutable` data classes (`AgentTurn`, `PaneData`, `SessionUiState`) and enforce `io.nlopez.compose.rules` via Detekt.
+### 3. Windows Gradle Daemon File Locking (`classes.jar`)
+* **Symptom**: `FileSystemException: classes.jar: The process cannot access the file because it is being used by another process`.
+* **Root Cause**: Windows process holding open file handles when parallel or cancelled gradle daemons are lingering.
+* **Permanent Fix**: Run `.\gradlew --stop` before running full multi-module compilation tasks.

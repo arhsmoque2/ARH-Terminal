@@ -1,58 +1,46 @@
-# Recipes & Runbooks
+# ARH-Terminal Recipes & Runbooks 📖
 
-## 🔨 Local Quality Gates & DevTooling
-
-### 1. Run Detekt & Compose Rules
-```bash
-./gradlew detekt
-```
-
-### 2. Run All Unit Tests
-```bash
-./gradlew test
-```
-
-### 3. Assemble Debug APK
-```bash
-./gradlew :app:assembleDebug
-```
-* Built APK is located at: `app/build/outputs/apk/debug/app-debug.apk`
-
-### 4. Auto-Format Code (Spotless + ktlint)
-```bash
-./gradlew spotlessApply
-```
-
-### 5. Compose Compiler Stability Metrics
-Generate composable stability and skippability reports:
-```bash
-./gradlew :app:assembleDebug -PcomposeCompilerReports=true -PcomposeCompilerMetrics=true
-```
-* Output metrics: `app/build/compose_metrics/`
-
----
-
-## 🔗 Server Host Connection (psmux)
-
-### 1. Launch a persistent psmux session on Windows
+### 1. Build & Assemble Debug APK
 ```powershell
-psmux new -s arh-agent
+Set-Location 'D:\_ARH-AGENT-OS\_AGENT-WORKSPACE\projects\ARH-Terminal'
+.\gradlew :app:assembleDebug
+# Output binary: app/build/outputs/apk/debug/app-debug.apk
 ```
 
-### 2. Start Claude Code or Codex inside the session
+### 2. Run Full Quality Gate (Detekt + Unit Tests)
 ```powershell
-claude
+Set-Location 'D:\_ARH-AGENT-OS\_AGENT-WORKSPACE\projects\ARH-Terminal'
+.\gradlew detekt :core:core-relay:test :core:core-mcp:test :app:test :core:core-agents:test
 ```
 
-### 3. Connect from ARH-Terminal
-* Open the app, enter your PC's IP / Hostname, and tap **Connect (psmux -CC)**.
-* Switch between **Agent Chat** and **Terminal Feed** via the top tabs.
+### 3. Start psmux Session on Host Dev Box
+```powershell
+# Start background psmux session with named socket
+psmux -u -S arh-agent new-session -s arh-agent
+```
 
----
+### 4. Connect to On-Device MCP Server from PC
+```python
+import urllib.request
+import json
 
-## 🚀 CI/CD Automation (GitHub Actions)
-* Workflow configured in `.github/workflows/ci.yml`.
-* Automatically runs on every push and pull request:
-  1. `Detekt & Compose Rules` (Enforces 0 static errors and Compose stability).
-  2. `Unit Test Suites` (Executes full parser and ViewModel tests).
-  3. `Assemble Debug APK` (Produces and attaches `arh-terminal-debug-apk` artifact).
+url = "http://100.85.170.170:8070/mcp"
+token = "ca48ffe8-cb63-45be-bfd5-1911e367fbcd"
+
+req = urllib.request.Request(
+    url,
+    data=json.dumps({
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "tools/call",
+        "params": {"name": "android_get_screen_state", "arguments": {}}
+    }).encode(),
+    headers={
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+        "Accept": "application/json, text/event-stream"
+    }
+)
+resp = urllib.request.urlopen(req)
+print(json.loads(resp.read()))
+```
