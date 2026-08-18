@@ -574,7 +574,7 @@ public final class DaggerARHTerminalApp_HiltComponents_SingletonC {
     }
 
     @Override
-    public void injectARHTerminalApp(ARHTerminalApp arg0) {
+    public void injectARHTerminalApp(ARHTerminalApp aRHTerminalApp) {
     }
 
     @Override

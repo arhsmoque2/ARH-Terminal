@@ -68,6 +68,9 @@ import androidx.compose.ui.unit.sp
 import com.arh.terminal.core.mcp.server.McpServerStats
 import com.arh.terminal.data.profiles.ConnectionProfile
 import com.arh.terminal.ui.components.FloatingApprovalHud
+import com.arh.terminal.ui.components.WorkflowMacrosModal
+import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.ContentPaste
 import com.arh.terminal.ui.components.QuickActionBar
 import com.arh.terminal.ui.conversation.AgentTurnCard
 import com.arh.terminal.util.NetworkType
@@ -126,7 +129,14 @@ fun SessionScreen(
                     )
                 }
 
-                if (state.connectionStatus is ConnectionStatus.Connected) {
+                IconButton(onClick = { viewModel.toggleMacrosModal(!state.showMacrosModal) }) {
+                        Icon(
+                            imageVector = Icons.Default.Bolt,
+                            contentDescription = "Workflow Macros",
+                            tint = Color(0xFFFBBF24)
+                        )
+                    }
+                    if (state.connectionStatus is ConnectionStatus.Connected) {
                     Spacer(modifier = Modifier.width(8.dp))
                     IconButton(onClick = { viewModel.disconnect() }) {
                         Icon(
@@ -620,6 +630,17 @@ private fun ConnectedSessionView(
                     }
                 }
             }
+        }
+
+        // --- 🌟 1-Tap DPIK & ARH Workflow Macros Drawer ---
+        if (state.showMacrosModal) {
+            WorkflowMacrosModal(
+                onSelectMacro = { cmd ->
+                    viewModel.sendPrompt(cmd)
+                    viewModel.toggleMacrosModal(false)
+                },
+                onDismiss = { viewModel.toggleMacrosModal(false) }
+            )
         }
 
         // --- ⚡ Moggsh-style Floating Approval HUD ---

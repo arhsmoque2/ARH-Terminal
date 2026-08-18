@@ -56,5 +56,7 @@ data class SessionUiState(
     val viewMode: ViewMode = ViewMode.AgentChat,
     val panes: List<PaneData> = emptyList(),
     val selectedPaneId: String? = null,
-    val pendingApprovalCommand: String? = null
+    val pendingApprovalCommand: String? = null,
+    val pendingSharedPrompt: String? = null,
+    val showMacrosModal: Boolean = false
 )

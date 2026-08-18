@@ -146,6 +146,9 @@ class SessionViewModel @Inject constructor(
     fun updateUsername(user: String) = _uiState.update { it.copy(username = user) }
     fun updatePort(port: Int) = _uiState.update { it.copy(port = port) }
     fun setViewMode(mode: ViewMode) = _uiState.update { it.copy(viewMode = mode) }
+    fun setPendingSharedPrompt(text: String) = _uiState.update { it.copy(pendingSharedPrompt = text) }
+    fun clearPendingSharedPrompt() = _uiState.update { it.copy(pendingSharedPrompt = null) }
+    fun toggleMacrosModal(show: Boolean) = _uiState.update { it.copy(showMacrosModal = show) }
 
     fun connect(privateKeyPem: String = "") {
         lastUsedKeyPem = privateKeyPem
