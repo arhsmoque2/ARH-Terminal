@@ -16,7 +16,7 @@
 | `:core:core-ssh` | `sshj 0.39.0`, `bouncycastle bcprov-jdk18on 1.80.2`, `slf4j-nop` | Raw SSH transport, PEM key authentication, host key verification |
 | `:core:core-tmux` | Kotlin Coroutines Flow, standard JVM streams | `psmux -CC` control mode protocol parser, pane demuxer, event stream |
 | `:core:core-agents` | `org.json`, Kotlin Coroutines | Stream tokenizers & event parsers for Claude Code, OpenAI Codex, OpenCode |
-| `:core:core-mcp` | Java Standard Library ServerSocket, JSON-RPC 2.0 parser | Embedded on-device MCP server exposing 56 Android native tools |
+| `:core:core-mcp` | Java Standard Library ServerSocket, JSON-RPC 2.0 parser | Embedded on-device MCP server exposing 17 verified native Android tools |
 | `:core:core-relay` | `okhttp 4.12.0`, `javax.crypto.Cipher` (AES-256-GCM) | E2EE WebSocket client for remote NAT/CGNAT cloud traversal |
 
 ---
