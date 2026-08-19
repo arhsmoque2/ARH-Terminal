@@ -49,13 +49,34 @@ class AndroidToolRegistry(
         }
         register("android_get_node_details", "Get detailed bounds and flags for a specific node ID.") { args ->
             val nodeId = args.optString("node_id", "")
-            McpCallResult(content = listOf(McpContent(text = "{\"node_id\": \"$nodeId\", \"clickable\": true}")))
+            val details = bridge.getNodeDetails(nodeId) ?: run {
+                val matches = bridge.findNodes(nodeId)
+                if (matches.length() > 0) matches.getJSONObject(0) else null
+            }
+            if (details != null) {
+                McpCallResult(content = listOf(McpContent(text = details.toString(2))))
+            } else {
+                val notFound = JSONObject().apply {
+                    put("node_id", nodeId)
+                    put("found", false)
+                    put("status", "node_not_found")
+                }
+                McpCallResult(content = listOf(McpContent(text = notFound.toString(2))))
+            }
         }
-        register("android_wait_for_node", "Wait until element matching query appears on screen.") {
-            McpCallResult(content = listOf(McpContent(text = "Node appeared.")))
+        register("android_wait_for_node", "Wait until element matching query appears on screen.") { args ->
+            val query = args.optString("query", "")
+            val found = bridge.findNodes(query)
+            if (found.length() > 0) {
+                McpCallResult(content = listOf(McpContent(text = "Node '$query' found on screen (${found.length()} matches).")))
+            } else {
+                McpCallResult(content = listOf(McpContent(text = "Node '$query' not yet visible on screen.")))
+            }
         }
         register("android_wait_for_idle", "Wait for animations and UI settle.") {
-            McpCallResult(content = listOf(McpContent(text = "UI idle.")))
+            val state = bridge.getScreenState()
+            val nodeCount = state.optInt("nodesCount", 0)
+            McpCallResult(content = listOf(McpContent(text = "UI settled with $nodeCount active nodes.")))
         }
     }
 
@@ -96,7 +117,8 @@ class AndroidToolRegistry(
             McpCallResult(content = listOf(McpContent(text = if (ok) "Typed '$text'" else "Type failed")))
         }
         register("android_dismiss_keyboard", "Dismiss the virtual on-screen soft keyboard.") {
-            McpCallResult(content = listOf(McpContent(text = "Keyboard dismissed")))
+            val ok = bridge.performKey(4)
+            McpCallResult(content = listOf(McpContent(text = if (ok) "Keyboard dismissed" else "Dismiss failed")))
         }
     }
 
@@ -112,13 +134,16 @@ class AndroidToolRegistry(
         }
         register("android_open_app", "Launch application by package name.") { args ->
             val pkg = args.optString("package_name", "")
-            McpCallResult(content = listOf(McpContent(text = "Launched $pkg")))
+            val ok = bridge.openApp(pkg)
+            McpCallResult(content = listOf(McpContent(text = if (ok) "Launched package '$pkg'" else "Failed to launch package '$pkg'")))
         }
         register("android_get_device_logs", "Retrieve latest logcat lines.") {
-            McpCallResult(content = listOf(McpContent(text = "Logcat stream active.")))
+            val logs = bridge.getDeviceLogs()
+            McpCallResult(content = listOf(McpContent(text = logs)))
         }
         register("android_notification_list", "List active status bar notifications.") {
-            McpCallResult(content = listOf(McpContent(text = "[]")))
+            val notifications = bridge.getNotifications()
+            McpCallResult(content = listOf(McpContent(text = notifications.toString(2))))
         }
     }
 }

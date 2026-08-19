@@ -36,7 +36,6 @@ jobs:
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true
 
   quality-gate-and-test:
     name: Detekt, Unit Tests & As-Built Doctor
@@ -66,7 +65,7 @@ jobs:
         run: ./gradlew detekt --no-daemon --stacktrace
 
       - name: Run Unit Tests with Timeout Ceiling
-        run: ./gradlew :core:core-ssh:test :core:core-agents:test :core:core-mcp:test :core:core-relay:test :app:test --no-daemon --stacktrace
+        run: ./gradlew :core:core-ssh:test :core:core-tmux:test :core:core-agents:test :core:core-mcp:test :core:core-relay:test :app:test --no-daemon --stacktrace
 
       - name: Run As-Built Doctor Conformance Gate
         run: python scripts/ci_asbuilt_doctor.py

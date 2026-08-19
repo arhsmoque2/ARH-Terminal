@@ -1,10 +1,10 @@
 package com.arh.terminal.di
 
 import com.arh.terminal.core.mcp.bridge.AccessibilityBridge
-import com.arh.terminal.core.mcp.bridge.DefaultAccessibilityBridge
 import com.arh.terminal.core.mcp.server.McpServerEngine
 import com.arh.terminal.core.mcp.tools.AndroidToolRegistry
 import com.arh.terminal.core.relay.client.RelayWebSocketClient
+import com.arh.terminal.mcp.DynamicAccessibilityBridge
 import com.pocketshell.core.tmux.TmuxClientFactory
 import dagger.Module
 import dagger.Provides
@@ -37,7 +37,7 @@ object TerminalModule {
 
     @Provides
     @Singleton
-    fun provideAccessibilityBridge(): AccessibilityBridge = DefaultAccessibilityBridge()
+    fun provideAccessibilityBridge(dynamicBridge: DynamicAccessibilityBridge): AccessibilityBridge = dynamicBridge
 
     @Provides
     @Singleton

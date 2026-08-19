@@ -15,10 +15,28 @@ class AndroidToolRegistryBehavioralTest {
     private class FakeDynamicAccessibilityBridge : AccessibilityBridge {
         var currentScreenState: JSONObject = JSONObject()
         val dispatchedGestures = mutableListOf<String>()
+        val launchedApps = mutableListOf<String>()
+        var customLogs: String = "Log entry A"
+        var customNotifications: JSONArray = JSONArray()
         private var clip: String = ""
 
         override fun getScreenState(): JSONObject = currentScreenState
-        override fun findNodes(query: String): JSONArray = JSONArray()
+        override fun findNodes(query: String): JSONArray {
+            val arr = JSONArray()
+            val nodes = currentScreenState.optJSONArray("nodes") ?: return arr
+            for (i in 0 until nodes.length()) {
+                val n = nodes.getJSONObject(i)
+                if (n.optString("text").contains(query) || n.optString("viewId").contains(query)) {
+                    arr.put(n)
+                }
+            }
+            return arr
+        }
+
+        override fun getNodeDetails(nodeId: String): JSONObject? {
+            val nodes = findNodes(nodeId)
+            return if (nodes.length() > 0) nodes.getJSONObject(0) else null
+        }
 
         override fun performTap(x: Int, y: Int): Boolean {
             dispatchedGestures.add("tap:$x,$y")
@@ -37,6 +55,14 @@ class AndroidToolRegistryBehavioralTest {
             clip = text
             return true
         }
+
+        override fun openApp(packageName: String): Boolean {
+            launchedApps.add(packageName)
+            return true
+        }
+
+        override fun getDeviceLogs(): String = customLogs
+        override fun getNotifications(): JSONArray = customNotifications
     }
 
     @Test
@@ -91,6 +117,28 @@ class AndroidToolRegistryBehavioralTest {
         assertEquals("tap:142,380", bridge.dispatchedGestures[0])
         assertEquals("tap:720,1280", bridge.dispatchedGestures[1])
         assertNotEquals(bridge.dispatchedGestures[0], bridge.dispatchedGestures[1])
+    }
+
+    @Test
+    fun openAppAndNodeDetailsExecuteDynamically() {
+        val bridge = FakeDynamicAccessibilityBridge()
+        bridge.currentScreenState = JSONObject().apply {
+            put("status", "ok")
+            put("nodes", JSONArray().apply {
+                put(JSONObject().apply {
+                    put("viewId", "com.example:id/submit_btn")
+                    put("text", "Submit Order")
+                })
+            })
+        }
+        val registry = AndroidToolRegistry(bridge)
+
+        val openRes = registry.executeTool("android_open_app", JSONObject().put("package_name", "com.android.chrome"))
+        assertTrue(openRes.content[0].text?.contains("com.android.chrome") == true)
+        assertEquals(listOf("com.android.chrome"), bridge.launchedApps)
+
+        val nodeRes = registry.executeTool("android_get_node_details", JSONObject().put("node_id", "submit_btn"))
+        assertTrue(nodeRes.content[0].text?.contains("Submit Order") == true)
     }
 
     @Test

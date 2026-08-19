@@ -36,7 +36,7 @@
 │  • Polymorphic Agent Turn Cards (Reasoning Drawer, Tool Invocation, Diffs)                                      │
 │  • 🎮 Gamepad Joypad Navigation (Vim/Tmux D-pad & Extended Action Rail without soft keyboard)                    │
 │  • ⚡ 1-Tap Auto-Tmux Session Discovery & Instant Attach Modal (moggsh pattern)                                  │
-│  • 🛡️ 3-Tier Consent Gate & Local SQLite Audit Journal Dashboard (Haven pattern)                                │
+│  • 🛡️ 3-Tier Consent Gate & Local Persistent Audit Journal Dashboard (Haven pattern)                             │
 │  • Floating Approval HUD (1-tap [Approve (Y)] / [Reject (N)]) & Quick-Action Extended Key Rail                  │
 │  • 🚀 1-Tap URUS 4-Agent Fleet & DPIK Workflow Macros Drawer & Android ACTION_SEND Share Target                 │
 └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
@@ -48,9 +48,9 @@
 
 | Capability | Module / Layer | Status | Verification Method |
 |---|---|---|---|
-| **psmux -CC Stream** | `:core:core-tmux` | 🟢 Verified | `ControlModeParser` + `ControlEventStream` |
+| **psmux -CC Stream** | `:core:core-tmux` | 🟢 Verified | 232 Unit Tests (`ControlModeParser`, `ControlEventStream`, `TmuxClient`) |
 | **Agent Parser Suite** | `:core:core-agents` | 🟢 Verified | 118 Unit Tests (`ClaudeCodeParserTest`, `CodexParserTest`) |
-| **SSH Transport & Leases** | `:core:core-ssh` | 🟢 Verified | 45 Unit Tests (`sshj` + BouncyCastle) |
+| **SSH Transport & Leases** | `:core:core-ssh` | 🟢 Verified | 305 Unit Tests (`sshj` + BouncyCastle) |
 | **On-Device MCP Server** | `:core:core-mcp` | 🟢 Verified | `CapabilityManifestConformanceTest` (`capabilities.json`) |
 | **Compact Tree & Fingerprint** | `:core:core-mcp` | 🟢 Verified | `CompactTreeFormatter` (85% token reduction) + `TreeFingerprint` |
 | **E2EE Relay Client** | `:core:core-relay` | 🟢 Verified | `RelayCipherTest` AES-256-GCM roundtrip |
@@ -72,7 +72,7 @@ Every build must pass the three-layer quality and spec gate:
 ./gradlew detekt
 
 # 2. Multi-Module Conformance & Unit Tests
-./gradlew :core:core-ssh:test :core:core-agents:test :core:core-mcp:test :core:core-relay:test :app:test
+./gradlew :core:core-ssh:test :core:core-tmux:test :core:core-agents:test :core:core-mcp:test :core:core-relay:test :app:test
 
 # 3. As-Built vs Spec Manifest Conformance Doctor
 python scripts/ci_asbuilt_doctor.py

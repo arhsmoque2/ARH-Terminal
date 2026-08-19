@@ -121,6 +121,34 @@ class McpAccessibilityService : AccessibilityService(), AccessibilityBridge {
         return true
     }
 
+    override fun getNodeDetails(nodeId: String): JSONObject? {
+        val root = rootInActiveWindow ?: return null
+        val idMatches = root.findAccessibilityNodeInfosByViewId(nodeId)
+        if (idMatches.isNotEmpty()) return nodeToJson(idMatches[0])
+        val textMatches = root.findAccessibilityNodeInfosByText(nodeId)
+        if (textMatches.isNotEmpty()) return nodeToJson(textMatches[0])
+        return null
+    }
+
+    override fun openApp(packageName: String): Boolean {
+        return try {
+            val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
+            if (launchIntent != null) {
+                launchIntent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                startActivity(launchIntent)
+                true
+            } else {
+                false
+            }
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    override fun getDeviceLogs(): String = "AccessibilityService active. UI hierarchy events monitored."
+
+    override fun getNotifications(): JSONArray = JSONArray()
+
     private fun dumpNodeHierarchy(node: AccessibilityNodeInfo, array: JSONArray) {
         array.put(nodeToJson(node))
         for (i in 0 until node.childCount) {

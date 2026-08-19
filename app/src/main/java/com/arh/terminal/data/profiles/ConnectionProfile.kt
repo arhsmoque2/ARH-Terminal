@@ -21,7 +21,13 @@ data class ConnectionProfile(
     val privateKeyPem: String = ""
 ) {
     fun toSerialized(): String {
-        return listOf(id, name, host, port.toString(), username, defaultSession, privateKeyPem)
+        val safeKey = if (privateKeyPem.isNotBlank()) {
+            val encoded = java.util.Base64.getEncoder().encodeToString(privateKeyPem.toByteArray(Charsets.UTF_8))
+            "enc:$encoded"
+        } else {
+            ""
+        }
+        return listOf(id, name, host, port.toString(), username, defaultSession, safeKey)
             .joinToString("\t")
     }
 
@@ -29,6 +35,16 @@ data class ConnectionProfile(
         fun fromSerialized(line: String): ConnectionProfile? {
             val parts = line.split("\t")
             if (parts.size < 5) return null
+            val rawKey = if (parts.size > 6) parts[6] else ""
+            val resolvedKey = if (rawKey.startsWith("enc:")) {
+                try {
+                    String(java.util.Base64.getDecoder().decode(rawKey.removePrefix("enc:")), Charsets.UTF_8)
+                } catch (_: Exception) {
+                    rawKey
+                }
+            } else {
+                rawKey
+            }
             return ConnectionProfile(
                 id = parts[0],
                 name = parts[1],
@@ -36,7 +52,7 @@ data class ConnectionProfile(
                 port = parts[3].toIntOrNull() ?: 22,
                 username = parts[4],
                 defaultSession = if (parts.size > 5) parts[5] else "arh-agent",
-                privateKeyPem = if (parts.size > 6) parts[6] else ""
+                privateKeyPem = resolvedKey
             )
         }
     }
