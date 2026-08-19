@@ -69,10 +69,20 @@ class NetworkMonitor @Inject constructor(
             .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
             .build()
 
-        connectivityManager.registerNetworkCallback(request, callback)
+        var registered = false
+        try {
+            connectivityManager.registerNetworkCallback(request, callback)
+            registered = true
+        } catch (_: Throwable) {
+            trySend(NetworkStatus(isConnected = true, type = NetworkType.Wifi))
+        }
 
         awaitClose {
-            connectivityManager.unregisterNetworkCallback(callback)
+            if (registered) {
+                try {
+                    connectivityManager.unregisterNetworkCallback(callback)
+                } catch (_: Throwable) { }
+            }
         }
     }
 }

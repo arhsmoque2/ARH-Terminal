@@ -2,6 +2,7 @@ package com.arh.terminal.data.security
 
 import android.content.Context
 import android.util.Base64
+import dagger.hilt.android.qualifiers.ApplicationContext
 import net.schmizz.sshj.transport.verification.HostKeyVerifier
 import java.security.MessageDigest
 import java.security.PublicKey
@@ -9,16 +10,11 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class KnownHostsStore @Inject constructor() {
-    private var context: Context? = null
-
-    fun initialize(ctx: Context) {
-        context = ctx.applicationContext
-    }
-
+class KnownHostsStore @Inject constructor(
+    @ApplicationContext private val context: Context
+) {
     private val prefs by lazy {
-        val ctx = checkNotNull(context) { "KnownHostsStore must be initialized with Context" }
-        ctx.getSharedPreferences("arh_known_hosts", Context.MODE_PRIVATE)
+        context.getSharedPreferences("arh_known_hosts", Context.MODE_PRIVATE)
     }
 
     fun fingerprint(key: PublicKey): String {
