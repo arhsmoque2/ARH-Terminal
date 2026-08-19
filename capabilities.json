@@ -1,0 +1,108 @@
+{
+  "version": "1.0.0",
+  "description": "ARH-Terminal Native Android Capabilities Specification",
+  "tools": [
+    {
+      "name": "android_get_screen_state",
+      "description": "Captures the complete accessibility UI tree and screen attributes.",
+      "category": "screen",
+      "permission": "accessibility"
+    },
+    {
+      "name": "android_find_nodes",
+      "description": "Search UI nodes by text or resource ID.",
+      "category": "screen",
+      "permission": "accessibility"
+    },
+    {
+      "name": "android_get_node_details",
+      "description": "Get detailed bounds and flags for a specific node ID.",
+      "category": "screen",
+      "permission": "accessibility"
+    },
+    {
+      "name": "android_wait_for_node",
+      "description": "Wait until element matching query appears on screen.",
+      "category": "screen",
+      "permission": "accessibility"
+    },
+    {
+      "name": "android_wait_for_idle",
+      "description": "Wait for animations and UI settle.",
+      "category": "screen",
+      "permission": "accessibility"
+    },
+    {
+      "name": "android_tap",
+      "description": "Tap on screen coordinates (x, y).",
+      "category": "gestures",
+      "permission": "accessibility"
+    },
+    {
+      "name": "android_swipe",
+      "description": "Perform drag/swipe gesture from (startX, startY) to (endX, endY).",
+      "category": "gestures",
+      "permission": "accessibility"
+    },
+    {
+      "name": "android_press_back",
+      "description": "Press the Android Back button.",
+      "category": "navigation",
+      "permission": "accessibility"
+    },
+    {
+      "name": "android_press_home",
+      "description": "Press the Android Home button.",
+      "category": "navigation",
+      "permission": "accessibility"
+    },
+    {
+      "name": "android_press_recents",
+      "description": "Press the Android Overview/Recents button.",
+      "category": "navigation",
+      "permission": "accessibility"
+    },
+    {
+      "name": "android_type_append_text",
+      "description": "Type text into currently focused input field.",
+      "category": "keyboard",
+      "permission": "accessibility"
+    },
+    {
+      "name": "android_dismiss_keyboard",
+      "description": "Dismiss the virtual on-screen soft keyboard.",
+      "category": "keyboard",
+      "permission": "accessibility"
+    },
+    {
+      "name": "android_get_clipboard",
+      "description": "Read current clipboard text content.",
+      "category": "system",
+      "permission": "clipboard"
+    },
+    {
+      "name": "android_set_clipboard",
+      "description": "Write text to device clipboard.",
+      "category": "system",
+      "permission": "clipboard"
+    },
+    {
+      "name": "android_open_app",
+      "description": "Launch application by package name.",
+      "category": "system",
+      "permission": "package"
+    },
+    {
+      "name": "android_get_device_logs",
+      "description": "Retrieve latest logcat lines.",
+      "category": "system",
+      "permission": "logcat"
+    },
+    {
+      "name": "android_notification_list",
+      "description": "List active status bar notifications.",
+      "category": "system",
+      "permission": "notifications"
+    }
+  ]
+}

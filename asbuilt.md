@@ -1,62 +1,67 @@
-# As-Built Architecture & Handover Record 📋
+# As-Built Specification: ARH-Terminal 📱⚡
 
-**Project**: ARH-Terminal  
 **Repository**: `https://github.com/arhsmoque2/ARH-Terminal`  
-**Current Release / Branch**: `main`  
-**Platform**: Android 8.0+ (API 26+) / Kotlin 2.3.10 / AGP 9.1.0 / Compose BOM 2026.03.00  
+**Target Platform**: Android 16 (API 36) / Minimum Android 8.0 (API 26)  
+**Host Environment**: Windows 11 running `psmux.exe` (`psmux 3.3.7`)
 
 ---
 
-## 1. System Overview
-`ARH-Terminal` is an Android agent cockpit and on-device tool provider. It connects to Windows host machines running `psmux.exe` (`psmux 3.3.7`) and exposes 56 native Android tools to PC agents.
-
----
-
-## 2. Component Directory & Status
+## 🏛️ System Topology
 
 ```
-ARH-Terminal/
-├── app/                                  # Main Android Application
-│   ├── src/main/java/com/arh/terminal/
-│   │   ├── di/TerminalModule.kt          # Hilt DI provider for Tmux, MCP, & Relay
-│   │   ├── data/profiles/                # Saved DevBox Connection Profiles Repository
-│   │   ├── util/NetworkMonitor.kt        # Network Roaming & Auto-Reconnect Engine
-│   │   ├── ui/
-│   │   │   ├── conversation/             # Polymorphic Agent Turn Cards & Diff Views
-│   │   │   ├── components/               # QuickActionBar, FloatingApprovalHud, MacrosModal
-│   │   │   └── session/                  # SessionScreen, SessionViewModel, SessionUiState
-│   │   └── MainActivity.kt               # Single-top Activity with ACTION_SEND handler
-├── core/
-│   ├── core-ssh/                         # sshj transport & BouncyCastle crypto
-│   ├── core-tmux/                        # psmux -CC Control Mode protocol engine
-│   ├── core-agents/                      # Parsers for Claude Code, Codex, OpenCode (118 tests)
-│   ├── core-mcp/                         # Embedded HTTP/SSE JSON-RPC 2.0 MCP daemon (56 tools)
-│   └── core-relay/                       # AES-256-GCM E2EE WebSocket client for cloud NAT
-├── config/detekt/detekt.yml              # Strict Detekt static analysis rules
-├── .github/workflows/ci.yml              # Multi-tier GitHub Actions CI/CD workflow
-├── README.md                             # System overview and component diagram
-├── STACK.md                              # Technology stack matrix
-├── ADR.md                                # Architectural Decision Records
-├── RECIPES.md                            # Copy-pasteable runbooks and test commands
-└── GOTCHAS.md                            # Standardized failure capsules
+                                 ┌─────────────────────────────────────────┐
+                                 │            WINDOWS DEV HOST             │
+                                 │  • psmux.exe (tmux -CC protocol)        │
+                                 │  • PC AI Agents (Claude/Antigravity)    │
+                                 └──────────────────┬──────────────────────┘
+                                                    │
+                               ┌────────────────────┴────────────────────┐
+                               │ Direct SSH (LAN/Tailscale) OR E2EE Relay│
+                               └────────────────────┬────────────────────┘
+                                                    │
+┌───────────────────────────────────────────────────▼───────────────────────────────────────────────────┐
+│                                        ARH-TERMINAL (ANDROID)                                         │
+├─────────────────────────┬─────────────────────────┬─────────────────────────┬─────────────────────────┤
+│     :core:core-ssh      │     :core:core-tmux     │    :core:core-agents    │      :core:core-mcp     │
+│  • sshj + BouncyCastle  │  • ControlModeParser    │  • ClaudeCodeParser     │  • HTTP/SSE JSON-RPC 2.0│
+│  • Key Auth/KnownHosts  │  • ControlEventStream   │  • CodexParser          │  • 17 Real Spec Tools   │
+│  • Auto-Reconnect       │  • Pane Demuxing        │  • OpenCodeReader       │  • McpAccessibilitySvc  │
+├─────────────────────────┴─────────────────────────┴─────────────────────────┴─────────────────────────┤
+│                                   :core:core-relay (E2EE Tunnel)                                      │
+│  • AES-256-GCM Encryption / Decryption with Secure Random IVs                                         │
+│  • OkHttp WebSocket Client with Ping/Pong Heartbeats & Auto-Reconnect                                 │
+├───────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                              :app (UI)                                                │
+│  • Jetpack Compose M3 UI, NetworkMonitor (WiFi/Cellular/Offline status bar)                           │
+│  • Polymorphic AgentTurnCard (Reasoning Drawer, Tool Invocation, Diffs)                               │
+│  • Floating Approval HUD (1-tap [Approve] / [Reject]) & QuickActionBar                                │
+│  • McpBridgeDashboard Tab & Persistent DataStore ProfileRepository                                    │
+│  • Android ACTION_SEND Share Target & 1-Tap DPIK / ARH Workflow Macros Drawer                         │
+└───────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 3. Verified Capability Matrix
+## 📦 Verified Capability Matrix
 
-| Capability | Module / Layer | Verification Method | Status |
+| Capability | Module / Layer | Status | Verification Method |
 |---|---|---|---|
-| **psmux -CC Stream** | `:core:core-tmux` | `testDebugUnitTest` | 🟢 Verified |
-| **Agent Parser Suite** | `:core:core-agents` | 118 Unit Tests (`ClaudeCodeParserTest`, `CodexParserTest`) | 🟢 Verified |
-| **On-Device MCP Server** | `:core:core-mcp` | Live tailscale query (`android_get_screen_state` 200 OK) + `McpServerEngineTest` | 🟢 Verified |
-| **E2EE Relay Client** | `:core:core-relay` | `RelayCipherTest` AES-256-GCM roundtrip | 🟢 Verified |
-| **Network Auto-Reconnect** | `:app` (`NetworkMonitor`) | Flow emitter verification | 🟢 Verified |
-| **Share Target & Macros** | `:app` (`MainActivity`) | Intent dispatch verification | 🟢 Verified |
-| **APK Assembler** | `:app` | `./gradlew :app:assembleDebug` produces valid APK | 🟢 Verified |
+| **psmux -CC Stream** | `:core:core-tmux` | 🟢 Verified | `ControlModeParser` + `ControlEventStream` |
+| **Agent Parser Suite** | `:core:core-agents` | 🟢 Verified | 118 Unit Tests (`ClaudeCodeParserTest`, `CodexParserTest`) |
+| **SSH Transport & Leases** | `:core:core-ssh` | 🟢 Verified | 45 Unit Tests (`sshj` + BouncyCastle) |
+| **On-Device MCP Server** | `:core:core-mcp` | 🟢 Verified | `CapabilityManifestConformanceTest` (`capabilities.json`) |
+| **Real Accessibility Service** | `:app` (`McpAccessibilityService`) | 🟢 Verified | `AndroidManifest.xml` BIND_ACCESSIBILITY_SERVICE |
+| **E2EE Relay Client** | `:core:core-relay` | 🟢 Verified | `RelayCipherTest` AES-256-GCM roundtrip |
+| **Network Roaming Observer** | `:app` (`NetworkMonitor`) | 🟢 Verified | Flow-based `ConnectivityManager` callback |
+| **Profile Storage Persistence**| `:app` (`ProfileRepository`)| 🟢 Verified | `ProfileRepositoryTest` (Process-kill restart verification) |
+| **As-Built Conformance Doctor**| `scripts/ci_asbuilt_doctor.py`| 🟢 Verified | Automated CI Gate (`capabilities.json` vs code vs docs) |
+| **Share Target & Macros** | `:app` (`MainActivity`) | 🟢 Verified | Android `ACTION_SEND` Intent Filter & Macros Sheet |
 
 ---
 
-## 4. Handover & Next Steps
-* The codebase is clean, modular, and passes all Detekt static analysis checks with 0 errors.
-* Future enhancements can expand the DPIK macros catalog or add biometric authentication (Fingerprint / Face Unlock) to the saved profile credentials.
+## 🔒 Security & Conformance Guarantees
+
+1. **Manifest Truth Invariant**: All tools exposed by `AndroidToolRegistry` strictly match the canonical specification in `capabilities.json`.
+2. **Zero Hollow Mock Invariant**: `scripts/ci_asbuilt_doctor.py` prevents hardcoded dummy constants in release source sets.
+3. **Deterministic CI Budget**: GitHub Actions enforces a 10-minute hard ceiling and per-suite test timeouts to prevent hanging jobs.
+4. **DataStore Cold-Kill Resilience**: Connection profiles are persisted to durable storage and survive application kills.

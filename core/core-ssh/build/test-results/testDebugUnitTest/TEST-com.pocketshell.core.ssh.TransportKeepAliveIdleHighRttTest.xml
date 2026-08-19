@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="com.pocketshell.core.ssh.TransportKeepAliveIdleHighRttTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-08-18T13:45:00.785Z" hostname="ARH-G4" time="0.005">
-  <properties/>
-  <testcase name="a link that answers only at the streak start then goes silent is still declared dead" classname="com.pocketshell.core.ssh.TransportKeepAliveIdleHighRttTest" time="0.002"/>
-  <testcase name="slow-but-alive idle high-RTT link is never declared dead while late replies keep arriving" classname="com.pocketshell.core.ssh.TransportKeepAliveIdleHighRttTest" time="0.002"/>
-  <testcase name="a truly silent peer is still declared dead within countMax - the #945 contract holds" classname="com.pocketshell.core.ssh.TransportKeepAliveIdleHighRttTest" time="0.001"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

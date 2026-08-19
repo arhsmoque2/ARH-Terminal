@@ -19,10 +19,9 @@ class DefaultAccessibilityBridge : AccessibilityBridge {
 
     override fun getScreenState(): JSONObject {
         return JSONObject().apply {
-            put("status", "ok")
-            put("screen", "1280x2772")
-            put("focusedApp", "com.arh.terminal")
-            put("nodesCount", 12)
+            put("status", "service_not_connected")
+            put("nodesCount", 0)
+            put("nodes", JSONArray())
         }
     }
 

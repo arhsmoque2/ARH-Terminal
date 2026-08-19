@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">ARH Terminal</string>
+    <string name="accessibility_service_description">Enables on-device AI agent screen introspection, touch gestures, and remote developer pairing.</string>
+</resources>

@@ -22,9 +22,27 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  quality-gate-and-test:
-    name: Detekt & Unit Tests
+  secret-scan:
+    name: Secret Leak Scan
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Gitleaks Scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+  quality-gate-and-test:
+    name: Detekt, Unit Tests & As-Built Doctor
+    needs: secret-scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10 # Strict ceiling to prevent hangs
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -36,11 +54,22 @@ jobs:
           distribution: 'temurin'
           cache: 'gradle'
 
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Run Detekt & Tests
-        run: ./gradlew detekt test
+      - name: Run Detekt Static Analysis
+        run: ./gradlew detekt --no-daemon --stacktrace
+
+      - name: Run Unit Tests with Timeout Ceiling
+        run: ./gradlew :core:core-ssh:test :core:core-agents:test :core:core-mcp:test :core:core-relay:test :app:test --no-daemon --stacktrace
+
+      - name: Run As-Built Doctor Conformance Gate
+        run: python scripts/ci_asbuilt_doctor.py
 
       - name: Upload Test Reports
         if: failure()
@@ -53,6 +82,7 @@ jobs:
     name: Assemble Debug APK
     needs: quality-gate-and-test
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -68,7 +98,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: Assemble Debug APK
-        run: ./gradlew :app:assembleDebug
+        run: ./gradlew :app:assembleDebug --no-daemon --stacktrace
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4

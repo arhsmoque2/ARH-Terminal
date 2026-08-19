@@ -1,8 +1,0 @@
-com.arh.terminal.core.relay.core-relay-pngs-0 D:\_ARH-AGENT-OS\_AGENT-WORKSPACE\projects\ARH-Terminal\core\core-relay\build\generated\res\pngs\debug
-com.arh.terminal.core.relay.core-relay-updated_navigation_xml-1 D:\_ARH-AGENT-OS\_AGENT-WORKSPACE\projects\ARH-Terminal\core\core-relay\build\generated\updated_navigation_xml\debug
-com.arh.terminal.core.relay.core-relay-mergeDebugResources-2 D:\_ARH-AGENT-OS\_AGENT-WORKSPACE\projects\ARH-Terminal\core\core-relay\build\intermediates\incremental\debug\mergeDebugResources\merged.dir
-com.arh.terminal.core.relay.core-relay-mergeDebugResources-3 D:\_ARH-AGENT-OS\_AGENT-WORKSPACE\projects\ARH-Terminal\core\core-relay\build\intermediates\incremental\debug\mergeDebugResources\stripped.dir
-com.arh.terminal.core.relay.core-relay-debug-4 D:\_ARH-AGENT-OS\_AGENT-WORKSPACE\projects\ARH-Terminal\core\core-relay\build\intermediates\merged_res\debug\mergeDebugResources
-com.arh.terminal.core.relay.core-relay-debug-5 D:\_ARH-AGENT-OS\_AGENT-WORKSPACE\projects\ARH-Terminal\core\core-relay\build\intermediates\packaged_res\debug\packageDebugResources
-com.arh.terminal.core.relay.core-relay-debug-6 D:\_ARH-AGENT-OS\_AGENT-WORKSPACE\projects\ARH-Terminal\core\core-relay\src\debug\res
-com.arh.terminal.core.relay.core-relay-main-7 D:\_ARH-AGENT-OS\_AGENT-WORKSPACE\projects\ARH-Terminal\core\core-relay\src\main\res

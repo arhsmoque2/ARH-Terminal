@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="com.pocketshell.core.ssh.Issue1683KeepAliveInputTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-08-18T13:44:43.721Z" hostname="ARH-G4" time="0.179">
-  <properties/>
-  <testcase name="every keepalive miss and the death-budget crossing are recorded as inputs" classname="com.pocketshell.core.ssh.Issue1683KeepAliveInputTest" time="0.179"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

@@ -31,7 +31,7 @@ class McpServerEngineTest {
         val res = registry.executeTool("android_get_screen_state", JSONObject())
         assertFalse(res.isError)
         assertEquals(1, res.content.size)
-        assertTrue(res.content[0].text?.contains("com.arh.terminal") == true)
+        assertTrue(res.content[0].text?.contains("status") == true)
     }
 
     @Test

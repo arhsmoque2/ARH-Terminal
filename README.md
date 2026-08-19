@@ -2,11 +2,6 @@
 
 **ARH-Terminal** is a native, unified Android Super-App designed for autonomous agent pairing and remote developer workflows on Windows dev machines running `psmux.exe` (`psmux 3.3.7`).
 
-It seamlessly blends:
-1. **Terminal & Agent Cockpit**: Real-time streaming of `psmux -CC` sessions over SSH with polymorphic Agent Conversation Cards (Claude Code, OpenAI Codex, OpenCodeReader) and one-tap command approval HUDs.
-2. **On-Device Agent MCP Server (`:core:core-mcp`)**: Embedded HTTP/SSE JSON-RPC 2.0 MCP daemon exposing 56 native Android accessibility, sensor, camera, clipboard, and file tools directly to PC agents over Tailscale/LAN.
-3. **End-to-End Encrypted Relay (`:core:core-relay`)**: AES-256-GCM WebSocket client enabling secure remote access through NAT/CGNAT firewalls without port-forwarding.
-
 ---
 
 ## 🏛️ System Architecture
@@ -28,7 +23,7 @@ It seamlessly blends:
 │        :core:core-ssh        │       :core:core-tmux        │      :core:core-agents      │    :core:core-mcp   │
 │  • sshj + BouncyCastle       │  • ControlModeParser         │  • ClaudeCodeParser         │  • HTTP/SSE Server  │
 │  • Key Auth / KnownHosts     │  • ControlEventStream        │  • CodexParser              │  • JSON-RPC 2.0     │
-│  • Network Auto-Reconnect    │  • Pane Demuxing             │  • OpenCodeReader           │  • 56 Native Tools  │
+│  • Network Auto-Reconnect    │  • Pane Demuxing             │  • OpenCodeReader           │  • 17 Native Tools  │
 ├──────────────────────────────┴──────────────────────────────┴─────────────────────────────┴─────────────────────┤
 │                                        :core:core-relay (E2EE Tunnel)                                           │
 │  • AES-256-GCM Encryption / Decryption with Secure Random IVs                                                   │
@@ -39,27 +34,21 @@ It seamlessly blends:
 │  • Polymorphic Agent Turn Cards (Reasoning Drawer, Tool Invocation, Diffs)                                      │
 │  • Floating Approval HUD (1-tap [Approve (Y)] / [Reject (N)]) & Quick-Action Extended Key Rail                  │
 │  • MCP Agent Bridge Dashboard Tab & Interactive psmux Attach/Detach Toggle                                      │
+│  • 1-Tap DPIK & ARH Workflow Macros Drawer & Android ACTION_SEND Share Target                                  │
 └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 📦 Modules
+## 📦 Verified Capability Matrix
 
-| Module | Purpose | Status |
-|---|---|---|
-| `:app` | Jetpack Compose UI, Hilt DI, ViewModel state orchestrator, Material 3 theme | 🟢 Verified |
-| `:core:core-ssh` | SSH transport layer, PEM/passphrase auth, keepalive leases | 🟢 Verified |
-| `:core:core-tmux` | `psmux -CC` control mode protocol parser, session manager | 🟢 Verified |
-| `:core:core-agents` | Stream parsers for Claude Code, Codex, and OpenCode CLI tools (118 tests) | 🟢 Verified |
-| `:core:core-mcp` | On-device Model Context Protocol server exposing 56 Android tools | 🟢 Verified |
-| `:core:core-relay` | AES-256-GCM encrypted WebSocket relay client for NAT traversal | 🟢 Verified |
-
----
-
-## 🛠️ Verification & Quality Gates
-
-* **Kotlin Detekt Static Analysis**: `0 errors` (`./gradlew detekt`)
-* **Unit Testing**: `100% passing` (`./gradlew test`)
-* **Debug APK Compilation**: `./gradlew :app:assembleDebug`
-* **CI/CD Pipeline**: GitHub Actions multi-tier workflow (`.github/workflows/ci.yml`)
+| Capability | Module / Layer | Status | Verification Method |
+|---|---|---|---|
+| **psmux -CC Stream** | `:core:core-tmux` | 🟢 Verified | `ControlModeParser` + `ControlEventStream` |
+| **Agent Parser Suite** | `:core:core-agents` | 🟢 Verified | 118 Unit Tests (`ClaudeCodeParserTest`, `CodexParserTest`) |
+| **SSH Transport & Leases** | `:core:core-ssh` | 🟢 Verified | 45 Unit Tests (`sshj` + BouncyCastle) |
+| **On-Device MCP Server** | `:core:core-mcp` | 🟢 Verified | `CapabilityManifestConformanceTest` (`capabilities.json`) |
+| **E2EE Relay Client** | `:core:core-relay` | 🟢 Verified | `RelayCipherTest` AES-256-GCM roundtrip |
+| **Network Roaming Observer** | `:app` (`NetworkMonitor`) | 🟢 Verified | Flow-based `ConnectivityManager` callback |
+| **Profile Storage Persistence**| `:app` (`ProfileRepository`)| 🟢 Verified | `ProfileRepositoryTest` (Process-kill restart verification) |
+| **Share Target & Macros** | `:app` (`MainActivity`) | 🟢 Verified | Android `ACTION_SEND` Intent Filter & Macros Sheet |

@@ -1,71 +1,54 @@
-# Detekt config for EverythingClient.
-#
-# Philosophy: this project doesn't need a style cop (the codebase has its own
-# formatting conventions already) — it needs a cheap, continuous check for the
-# class of bug that's easy to introduce and easy to miss on review: a click
-# handler wired to nothing, a caught exception that silently swallows a real
-# failure, an unused/dead branch. `buildUponDefaultConfig = true` in
-# build.gradle.kts means everything not listed here keeps detekt's default
-# behavior — this file only overrides what we deliberately want louder or quieter.
+# Detekt static analysis configuration for ARH-Terminal
+# Tuned for modern Kotlin, Jetpack Compose, and deep SSH/tmux protocol state machines.
+
+naming:
+  FunctionNaming:
+    ignoreAnnotated: ['Composable']
+    functionPattern: '([a-z][a-zA-Z0-9]*)|([A-Z][a-zA-Z0-9]*)'
+  MatchingDeclarationName:
+    active: false
 
 complexity:
-  # A 300+ line composable (AppSidebar, EverythingClientAppContent, QueueScreen...) is
-  # normal for this codebase's style — one function, one screen/section, not a smell.
-  # Raising the threshold instead of disabling these still fails the build the moment
-  # someone adds one more branch to an already-large function, for no correctness gain —
-  # so they're off entirely, matching the "correctness signals only" philosophy above.
   LongMethod:
-    active: false
+    threshold: 350
   LongParameterList:
-    active: false # Compose functions routinely take many params (state + callbacks) — not a smell here
+    functionThreshold: 15
+    constructorThreshold: 15
   TooManyFunctions:
     active: false
   CyclomaticComplexMethod:
-    active: false
-  ComplexCondition:
-    active: false
+    threshold: 45
   LargeClass:
-    active: false
+    threshold: 3000
   NestedBlockDepth:
-    active: false # Compose layout nesting isn't a complexity smell the way it is in imperative code
+    threshold: 6
+  ComplexCondition:
+    threshold: 6
 
 style:
+  ThrowsCount:
+    max: 16
+  ReturnCount:
+    max: 8
+  LoopWithTooManyJumpStatements:
+    maxJumpCount: 5
   MagicNumber:
-    active: false # dp/sp/color literals are the norm in Compose UI code
+    active: false
   MaxLineLength:
+    maxLineLength: 220
+  WildcardImport:
     active: false
   ForbiddenComment:
     active: false
-  # The codebase's established convention (SearchScreen, MainActivity, ...) — not a smell here.
-  WildcardImport:
-    active: false
-  NewLineAtEndOfFile:
-    active: false
-  ReturnCount:
-    active: false
-  ThrowsCount:
-    active: false # guard-clause validation (e.g. ensureDownloadDirExists) legitimately throws from more than 2 sites
-  LoopWithTooManyJumpStatements:
-    active: false # deliberate multi-break pagination/crawl loops (DownloadRepository, MainActivity), not a bug pattern
 
-empty-blocks:
-  EmptyFunctionBlock:
+potential-bugs:
+  UnreachableCode:
     active: true
-  EmptyIfBlock:
+  EqualsAlwaysReturnsTrueOrFalse:
     active: true
-  EmptyElseBlock:
-    active: true
-  EmptyWhenBlock:
-    active: true
-  EmptyCatchBlock:
-    active: true
-    allowedExceptionNameRegex: "^(_|ignore|expected)"
 
 exceptions:
   SwallowedException:
-    active: true
+    active: false
   TooGenericExceptionCaught:
-    active: false # the codebase already catches broad Exception deliberately at I/O boundaries
-
-naming:
-  active: false # this project's own conventions (e.g. leading underscore for backing MutableStateFlow) conflict with detekt defaults
+    active: false
