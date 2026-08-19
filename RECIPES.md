@@ -25,7 +25,7 @@ import urllib.request
 import json
 
 url = "http://100.85.170.170:8070/mcp"
-token = "ca48ffe8-cb63-45be-bfd5-1911e367fbcd"
+token = "<DYNAMIC_GENERATED_SESSION_BEARER_TOKEN>"
 
 req = urllib.request.Request(
     url,

@@ -380,7 +380,7 @@ private fun McpMiniTile(
 
             Switch(
                 checked = stats.isRunning,
-                onCheckedChange = { onToggle(it, 8070, "ca48ffe8-cb63-45be-bfd5-1911e367fbcd") },
+                onCheckedChange = { onToggle(it, 8070, stats.bearerToken) },
                 colors = SwitchDefaults.colors(
                     checkedThumbColor = Color(0xFF10B981),
                     checkedTrackColor = Color(0xFF065F46)
@@ -753,7 +753,7 @@ private fun McpBridgeDashboard(
                             color = Color.White
                         )
                         Text(
-                            text = "56 Native Android Tools Exported",
+                            text = "17 Native Android Tools Exported",
                             style = MaterialTheme.typography.labelSmall,
                             color = Color(0xFF94A3B8)
                         )
@@ -762,7 +762,7 @@ private fun McpBridgeDashboard(
 
                 Switch(
                     checked = stats.isRunning,
-                    onCheckedChange = { onToggle(it, 8070, "ca48ffe8-cb63-45be-bfd5-1911e367fbcd") },
+                    onCheckedChange = { onToggle(it, 8070, stats.bearerToken) },
                     colors = SwitchDefaults.colors(
                         checkedThumbColor = Color(0xFF10B981),
                         checkedTrackColor = Color(0xFF065F46)

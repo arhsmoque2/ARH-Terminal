@@ -21,7 +21,7 @@ import java.util.UUID
 data class McpServerStats(
     val isRunning: Boolean = false,
     val port: Int = 8070,
-    val bearerToken: String = "arh-mcp-secret",
+    val bearerToken: String = UUID.randomUUID().toString(),
     val activeSessions: Int = 0,
     val totalToolCalls: Int = 0,
     val lastToolCall: String? = null
@@ -38,7 +38,7 @@ class McpServerEngine(
     private val _stats = MutableStateFlow(McpServerStats())
     val stats: StateFlow<McpServerStats> = _stats.asStateFlow()
 
-    fun start(port: Int = 8070, token: String = "ca48ffe8-cb63-45be-bfd5-1911e367fbcd") {
+    fun start(port: Int = 8070, token: String = UUID.randomUUID().toString()) {
         if (_stats.value.isRunning) return
         _stats.update { it.copy(port = port, bearerToken = token) }
 
