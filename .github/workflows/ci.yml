@@ -78,7 +78,7 @@ jobs:
           path: '**/build/reports/'
 
   build-apk:
-    name: Assemble Debug APK
+    name: Assemble Debug APK & Verify Signing
     needs: quality-gate-and-test
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -93,14 +93,62 @@ jobs:
           distribution: 'temurin'
           cache: 'gradle'
 
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
       - name: Assemble Debug APK
         run: ./gradlew :app:assembleDebug --no-daemon --stacktrace
 
+      - name: Run APK Signing & Alignment Doctor (Debug)
+        run: python scripts/ci_apk_signing_doctor.py app/build/outputs/apk/debug/app-debug.apk
+
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
         with:
           name: arh-terminal-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
+
+  build-release-apk:
+    name: Assemble Signed Release APK & Gate
+    needs: quality-gate-and-test
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Assemble Signed Release APK
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: ./gradlew :app:assembleRelease --no-daemon --stacktrace
+
+      - name: Run APK Signing & Alignment Doctor (Release)
+        run: python scripts/ci_apk_signing_doctor.py app/build/outputs/apk/release/app-release.apk --release
+
+      - name: Upload Signed Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: arh-terminal-release-apk
+          path: app/build/outputs/apk/release/app-release.apk
