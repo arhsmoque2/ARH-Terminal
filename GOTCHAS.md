@@ -29,3 +29,8 @@
 * **Permanent Fix**: Ensure test collector does not synchronously block the event loop, or complete gates before awaiting downstream barriers.
 * **Verification**: `TmuxClientPaneOutputTest` passes in <10s.
 
+### 6. Release Signing Fails with `BadPaddingException` When Secrets Are Missing/Wrong
+* **Symptom**: `:app:assembleRelease` fails deep in AGP packaging with `KeytoolException: ... keystore password was incorrect` / `javax.crypto.BadPaddingException: Given final block not properly padded`.
+* **Root Cause**: `app/build.gradle.kts` previously fell back to a hardcoded placeholder password (`"arhterminal2026"`) whenever the `KEYSTORE_PASSWORD` / `KEY_PASSWORD` env vars weren't set. That placeholder doesn't match the real password on the committed `arh-release.jks`, so it silently swapped a clear "secret missing" error for a confusing low-level crypto exception.
+* **Permanent Fix**: No hardcoded fallback password. `storePassword`/`keyPassword` are read only from env vars; a `gradle.taskGraph.whenReady` check fails fast with an explicit message when a `*Release` task runs without both set. Set `KEYSTORE_PASSWORD` and `KEY_PASSWORD` to the actual `arh-release.jks` credentials — as local env vars for a local release build, or as GitHub Actions repo secrets for CI (`Settings → Secrets and variables → Actions`).
+* **Verification**: `./gradlew :app:assembleDebug` (and all non-release tasks) are unaffected; `./gradlew :app:assembleRelease` without the env vars now fails immediately with the actionable message instead of the keystore stack trace.
