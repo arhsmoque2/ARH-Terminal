@@ -35,3 +35,8 @@
 * **Permanent Fix**: Removed hardcoded fallback password. `storePassword`/`keyPassword` are read strictly from env vars; a `gradle.taskGraph.whenReady` check fails fast with an actionable message if release signing tasks run without `KEYSTORE_PASSWORD` and `KEY_PASSWORD`. Set `KEYSTORE_PASSWORD` and `KEY_PASSWORD` (`arhterminal2026`) as GitHub Actions repo secrets (`Settings -> Secrets and variables -> Actions`) and local env vars.
 * **Verification**: All GitHub Actions CI jobs (`Assemble Debug APK & Verify Signing` and `Assemble Signed Release APK & Gate`) pass with green status, producing verified `arh-terminal-release-apk` and `arh-terminal-debug-apk` artifacts.
 
+### 7. Debug APK Fails `ci_apk_signing_doctor.py`'s Size Budget Gate
+* **Symptom**: `Assemble Debug APK & Verify Signing` fails with `APK Size (23.25 MB) exceeds maximum allowed budget (8.00 MB)!` even though the debug build itself succeeded.
+* **Root Cause**: `ci_apk_signing_doctor.py`'s `--max-size-mb` defaults to `8.0`, sized for the shipped **release** artifact. The debug variant is unminified, carries debug symbols, and pulls in `debugImplementation(libs.androidx.compose.ui.tooling)`, so it's routinely 3-4x larger — that's expected, not a regression.
+* **Permanent Fix**: The `Run APK Signing & Alignment Doctor (Debug)` CI step passes `--max-size-mb 35` for the debug APK; the release step keeps the tight default `8.0` MB budget, since that's the artifact users actually install.
+* **Verification**: `./gradlew :app:assembleDebug` output passes the doctor with the debug-scoped budget; the release budget is unchanged.

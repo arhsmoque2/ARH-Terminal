@@ -105,7 +105,11 @@ jobs:
         run: ./gradlew :app:assembleDebug --no-daemon --stacktrace
 
       - name: Run APK Signing & Alignment Doctor (Debug)
-        run: python scripts/ci_apk_signing_doctor.py app/build/outputs/apk/debug/app-debug.apk
+        # Debug builds are unminified with debug symbols and Compose tooling included
+        # (debugImplementation), so they're routinely 3-4x the release APK size. The
+        # doctor's default --max-size-mb budget (8MB) is tuned for the shipped release
+        # artifact; give the debug variant its own, looser ceiling instead.
+        run: python scripts/ci_apk_signing_doctor.py app/build/outputs/apk/debug/app-debug.apk --max-size-mb 35
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
