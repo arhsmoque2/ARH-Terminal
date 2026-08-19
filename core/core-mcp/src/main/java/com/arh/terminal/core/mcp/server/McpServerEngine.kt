@@ -28,7 +28,7 @@ data class McpServerStats(
 )
 
 class McpServerEngine(
-    private val toolRegistry: AndroidToolRegistry,
+    val toolRegistry: AndroidToolRegistry,
     private val scope: CoroutineScope = CoroutineScope(Dispatchers.IO)
 ) {
     private var serverSocket: ServerSocket? = null
@@ -68,7 +68,7 @@ class McpServerEngine(
         _stats.update { it.copy(isRunning = false, activeSessions = 0) }
     }
 
-    private fun handleClient(socket: Socket) {
+    private suspend fun handleClient(socket: Socket) {
         socket.use { s ->
             val reader = BufferedReader(InputStreamReader(s.getInputStream()))
             val out = s.getOutputStream()
@@ -130,7 +130,7 @@ class McpServerEngine(
         }
     }
 
-    private fun processJsonRpc(req: JSONObject): JSONObject {
+    private suspend fun processJsonRpc(req: JSONObject): JSONObject {
         val id = req.opt("id")
         val method = req.optString("method")
         val params = req.optJSONObject("params") ?: JSONObject()

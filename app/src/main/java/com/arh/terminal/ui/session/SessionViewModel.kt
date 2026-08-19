@@ -22,7 +22,10 @@ import com.pocketshell.core.ssh.SshSession
 import com.pocketshell.core.tmux.TmuxClient
 import com.pocketshell.core.tmux.TmuxClientFactory
 import com.pocketshell.core.tmux.protocol.ControlEvent
+import com.arh.terminal.core.mcp.tools.ConsentGate
+import com.arh.terminal.core.mcp.tools.ToolConsentTier
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -51,8 +54,12 @@ class SessionViewModel @Inject constructor(
     private var activeTmuxClient: TmuxClient? = null
     private val claudeParser = ClaudeCodeParser()
     private var lastUsedKeyPem: String = ""
+    private var pendingConsentDeferred: CompletableDeferred<Boolean>? = null
 
     init {
+        mcpServerEngine.toolRegistry.consentGate = ConsentGate { name, args, tier ->
+            requestOperatorConsent(name, args, tier)
+        }
         viewModelScope.launch {
             profileRepository.profiles.collect { profilesList ->
                 _uiState.update { it.copy(profiles = profilesList) }
@@ -248,11 +255,35 @@ class SessionViewModel @Inject constructor(
         _uiState.update { it.copy(selectedPaneId = paneId) }
     }
 
+    private suspend fun requestOperatorConsent(toolName: String, args: org.json.JSONObject, tier: ToolConsentTier): Boolean {
+        val deferred = CompletableDeferred<Boolean>()
+        pendingConsentDeferred = deferred
+        val prompt = "MCP [${tier.name}] $toolName: $args"
+        _uiState.update { it.copy(pendingApprovalCommand = prompt) }
+
+        val approved = try {
+            deferred.await()
+        } finally {
+            pendingConsentDeferred = null
+            _uiState.update { it.copy(pendingApprovalCommand = null) }
+        }
+        return approved
+    }
+
     fun approvePrompt() {
         approveCommand()
     }
 
     fun approveCommand() {
+        val pendingConsent = pendingConsentDeferred
+        if (pendingConsent != null) {
+            val cmd = _uiState.value.pendingApprovalCommand ?: "MCP Action"
+            auditJournal.recordAction("Consent HUD", "approve_mcp_action", cmd, ConsentTier.MUTATIVE, approved = true)
+            pendingConsent.complete(true)
+            _uiState.update { it.copy(pendingApprovalCommand = null) }
+            return
+        }
+
         val cmd = _uiState.value.pendingApprovalCommand
         auditJournal.recordAction("Approval HUD", "approve_command", cmd ?: "unknown", ConsentTier.MUTATIVE, approved = true)
         sendCommand("y\n")
@@ -260,6 +291,15 @@ class SessionViewModel @Inject constructor(
     }
 
     fun rejectCommand() {
+        val pendingConsent = pendingConsentDeferred
+        if (pendingConsent != null) {
+            val cmd = _uiState.value.pendingApprovalCommand ?: "MCP Action"
+            auditJournal.recordAction("Consent HUD", "reject_mcp_action", cmd, ConsentTier.MUTATIVE, approved = false)
+            pendingConsent.complete(false)
+            _uiState.update { it.copy(pendingApprovalCommand = null) }
+            return
+        }
+
         val cmd = _uiState.value.pendingApprovalCommand
         auditJournal.recordAction("Approval HUD", "reject_command", cmd ?: "unknown", ConsentTier.MUTATIVE, approved = false)
         sendCommand("n\n")

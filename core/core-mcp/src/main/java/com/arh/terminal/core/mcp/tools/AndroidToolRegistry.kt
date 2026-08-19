@@ -6,10 +6,22 @@ import com.arh.terminal.core.mcp.protocol.McpContent
 import com.arh.terminal.core.mcp.protocol.McpToolDefinition
 import org.json.JSONObject
 
+enum class ToolConsentTier {
+    READ_ONLY,
+    MUTATIVE,
+    CRITICAL
+}
+
+fun interface ConsentGate {
+    suspend fun requestConsent(toolName: String, args: JSONObject, tier: ToolConsentTier): Boolean
+}
+
 class AndroidToolRegistry(
     private val bridge: AccessibilityBridge
 ) {
-    private val tools = mutableMapOf<String, Pair<McpToolDefinition, (JSONObject) -> McpCallResult>>()
+    var consentGate: ConsentGate? = null
+
+    private val tools = mutableMapOf<String, Triple<McpToolDefinition, ToolConsentTier, suspend (JSONObject) -> McpCallResult>>()
 
     init {
         registerScreenTools()
@@ -20,34 +32,56 @@ class AndroidToolRegistry(
 
     fun listTools(): List<McpToolDefinition> = tools.values.map { it.first }
 
-    fun executeTool(name: String, args: JSONObject): McpCallResult {
+    suspend fun executeTool(name: String, args: JSONObject): McpCallResult {
         val entry = tools[name] ?: return McpCallResult(
             isError = true,
             content = listOf(McpContent(type = "text", text = "Tool '$name' not found."))
         )
+        val (_, tier, handler) = entry
+
+        // 🛡️ Haven 3-Tier Consent Gate
+        if (tier != ToolConsentTier.READ_ONLY) {
+            val gate = consentGate
+            if (gate != null) {
+                val granted = gate.requestConsent(name, args, tier)
+                if (!granted) {
+                    return McpCallResult(
+                        isError = true,
+                        content = listOf(McpContent(type = "text", text = "Execution aborted: Action '$name' rejected by operator consent gate."))
+                    )
+                }
+            }
+        }
+
         return try {
-            entry.second(args)
+            handler(args)
         } catch (e: Exception) {
             McpCallResult(isError = true, content = listOf(McpContent(type = "text", text = "Execution error: ${e.message}")))
         }
     }
 
-    private fun register(name: String, description: String, schema: JSONObject = JSONObject(), handler: (JSONObject) -> McpCallResult) {
+    private fun register(
+        name: String,
+        description: String,
+        tier: ToolConsentTier,
+        schema: JSONObject = JSONObject(),
+        handler: suspend (JSONObject) -> McpCallResult
+    ) {
         val def = McpToolDefinition(name = name, description = description, inputSchema = schema)
-        tools[name] = def to handler
+        tools[name] = Triple(def, tier, handler)
     }
 
     private fun registerScreenTools() {
-        register("android_get_screen_state", "Captures the complete accessibility UI tree and screen attributes.") {
+        register("android_get_screen_state", "Captures the complete accessibility UI tree and screen attributes.", ToolConsentTier.READ_ONLY) {
             val state = bridge.getScreenState()
             McpCallResult(content = listOf(McpContent(text = state.toString(2))))
         }
-        register("android_find_nodes", "Search UI nodes by text or resource ID.") { args ->
+        register("android_find_nodes", "Search UI nodes by text or resource ID.", ToolConsentTier.READ_ONLY) { args ->
             val query = args.optString("query", "")
             val results = bridge.findNodes(query)
             McpCallResult(content = listOf(McpContent(text = results.toString(2))))
         }
-        register("android_get_node_details", "Get detailed bounds and flags for a specific node ID.") { args ->
+        register("android_get_node_details", "Get detailed bounds and flags for a specific node ID.", ToolConsentTier.READ_ONLY) { args ->
             val nodeId = args.optString("node_id", "")
             val details = bridge.getNodeDetails(nodeId) ?: run {
                 val matches = bridge.findNodes(nodeId)
@@ -64,7 +98,7 @@ class AndroidToolRegistry(
                 McpCallResult(content = listOf(McpContent(text = notFound.toString(2))))
             }
         }
-        register("android_wait_for_node", "Wait until element matching query appears on screen.") { args ->
+        register("android_wait_for_node", "Wait until element matching query appears on screen.", ToolConsentTier.READ_ONLY) { args ->
             val query = args.optString("query", "")
             val found = bridge.findNodes(query)
             if (found.length() > 0) {
@@ -73,7 +107,7 @@ class AndroidToolRegistry(
                 McpCallResult(content = listOf(McpContent(text = "Node '$query' not yet visible on screen.")))
             }
         }
-        register("android_wait_for_idle", "Wait for animations and UI settle.") {
+        register("android_wait_for_idle", "Wait for animations and UI settle.", ToolConsentTier.READ_ONLY) {
             val state = bridge.getScreenState()
             val nodeCount = state.optInt("nodesCount", 0)
             McpCallResult(content = listOf(McpContent(text = "UI settled with $nodeCount active nodes.")))
@@ -81,13 +115,13 @@ class AndroidToolRegistry(
     }
 
     private fun registerGestureTools() {
-        register("android_tap", "Tap on screen coordinates (x, y).") { args ->
+        register("android_tap", "Tap on screen coordinates (x, y).", ToolConsentTier.MUTATIVE) { args ->
             val x = args.optInt("x", 0)
             val y = args.optInt("y", 0)
             val success = bridge.performTap(x, y)
             McpCallResult(content = listOf(McpContent(text = if (success) "Tapped at ($x, $y)" else "Tap failed")))
         }
-        register("android_swipe", "Perform drag/swipe gesture from (startX, startY) to (endX, endY).") { args ->
+        register("android_swipe", "Perform drag/swipe gesture from (startX, startY) to (endX, endY).", ToolConsentTier.MUTATIVE) { args ->
             val sx = args.optInt("startX", 0)
             val sy = args.optInt("startY", 0)
             val ex = args.optInt("endX", 0)
@@ -96,52 +130,52 @@ class AndroidToolRegistry(
             val ok = bridge.performSwipe(sx, sy, ex, ey, dur)
             McpCallResult(content = listOf(McpContent(text = if (ok) "Swiped successfully" else "Swipe failed")))
         }
-        register("android_press_back", "Press the Android Back button.") {
+        register("android_press_back", "Press the Android Back button.", ToolConsentTier.MUTATIVE) {
             val ok = bridge.performKey(4)
             McpCallResult(content = listOf(McpContent(text = if (ok) "Back pressed" else "Failed")))
         }
-        register("android_press_home", "Press the Android Home button.") {
+        register("android_press_home", "Press the Android Home button.", ToolConsentTier.MUTATIVE) {
             val ok = bridge.performKey(3)
             McpCallResult(content = listOf(McpContent(text = if (ok) "Home pressed" else "Failed")))
         }
-        register("android_press_recents", "Press the Android Overview/Recents button.") {
+        register("android_press_recents", "Press the Android Overview/Recents button.", ToolConsentTier.MUTATIVE) {
             val ok = bridge.performKey(187)
             McpCallResult(content = listOf(McpContent(text = if (ok) "Recents opened" else "Failed")))
         }
     }
 
     private fun registerKeyboardTools() {
-        register("android_type_append_text", "Type text into currently focused input field.") { args ->
+        register("android_type_append_text", "Type text into currently focused input field.", ToolConsentTier.MUTATIVE) { args ->
             val text = args.optString("text", "")
             val ok = bridge.typeText(text)
             McpCallResult(content = listOf(McpContent(text = if (ok) "Typed '$text'" else "Type failed")))
         }
-        register("android_dismiss_keyboard", "Dismiss the virtual on-screen soft keyboard.") {
+        register("android_dismiss_keyboard", "Dismiss the virtual on-screen soft keyboard.", ToolConsentTier.MUTATIVE) {
             val ok = bridge.performKey(4)
             McpCallResult(content = listOf(McpContent(text = if (ok) "Keyboard dismissed" else "Dismiss failed")))
         }
     }
 
     private fun registerSystemTools() {
-        register("android_get_clipboard", "Read current clipboard text content.") {
+        register("android_get_clipboard", "Read current clipboard text content.", ToolConsentTier.READ_ONLY) {
             val clip = bridge.getClipboard() ?: ""
             McpCallResult(content = listOf(McpContent(text = clip)))
         }
-        register("android_set_clipboard", "Write text to device clipboard.") { args ->
+        register("android_set_clipboard", "Write text to device clipboard.", ToolConsentTier.MUTATIVE) { args ->
             val text = args.optString("text", "")
             val ok = bridge.setClipboard(text)
             McpCallResult(content = listOf(McpContent(text = if (ok) "Clipboard updated" else "Clipboard set failed")))
         }
-        register("android_open_app", "Launch application by package name.") { args ->
+        register("android_open_app", "Launch application by package name.", ToolConsentTier.CRITICAL) { args ->
             val pkg = args.optString("package_name", "")
             val ok = bridge.openApp(pkg)
             McpCallResult(content = listOf(McpContent(text = if (ok) "Launched package '$pkg'" else "Failed to launch package '$pkg'")))
         }
-        register("android_get_device_logs", "Retrieve latest logcat lines.") {
+        register("android_get_device_logs", "Retrieve latest logcat lines.", ToolConsentTier.READ_ONLY) {
             val logs = bridge.getDeviceLogs()
             McpCallResult(content = listOf(McpContent(text = logs)))
         }
-        register("android_notification_list", "List active status bar notifications.") {
+        register("android_notification_list", "List active status bar notifications.", ToolConsentTier.READ_ONLY) {
             val notifications = bridge.getNotifications()
             McpCallResult(content = listOf(McpContent(text = notifications.toString(2))))
         }

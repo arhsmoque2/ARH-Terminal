@@ -16,3 +16,16 @@
 * **Symptom**: `FileSystemException: classes.jar: The process cannot access the file because it is being used by another process`.
 * **Root Cause**: Windows process holding open file handles when parallel or cancelled gradle daemons are lingering.
 * **Permanent Fix**: Run `.\gradlew --stop` before running full multi-module compilation tasks.
+
+### 4. `android.util.Log` Mocking in JVM Library Unit Tests
+* **Symptom**: `AssertionError` or `RuntimeException: Method not mocked` when tests hit methods that log via `android.util.Log`.
+* **Root Cause**: AGP unit tests on JVM stubs throw exceptions for unmocked Android framework calls by default.
+* **Permanent Fix**: Add `testOptions { unitTests.isReturnDefaultValues = true }` inside `android { ... }` in submodule `build.gradle.kts` files.
+* **Verification**: `./gradlew :core:core-tmux:test` passes all 232 tests without stub crashes.
+
+### 5. Coroutine Flow Collector Deadlocks in Test Fixtures
+* **Symptom**: `withTimeout` hangs for 15s in test cases simulating event flood streams.
+* **Root Cause**: Flow collector suspended on an uncompleted `CompletableDeferred` while the upstream producer saturated the SharedFlow buffer, stalling the underlying reader before it could feed the test barrier.
+* **Permanent Fix**: Ensure test collector does not synchronously block the event loop, or complete gates before awaiting downstream barriers.
+* **Verification**: `TmuxClientPaneOutputTest` passes in <10s.
+

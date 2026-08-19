@@ -334,13 +334,11 @@ class TmuxClientPaneOutputTest {
         val session = FakeSession(shell)
         val client = RealTmuxClient(session, scope)
         val windowCloseSeen = CompletableDeferred<String>()
-        val floodDrained = CompletableDeferred<Unit>()
         try {
             client.connect()
 
             val collector = scope.async {
                 client.events.collect { ev ->
-                    floodDrained.await()
                     if (ev is ControlEvent.WindowClose && ev.windowId == "@7") {
                         windowCloseSeen.complete(ev.windowId)
                     }
@@ -362,12 +360,10 @@ class TmuxClientPaneOutputTest {
             shell.feed("%output %barrier done\n")
             withTimeout(PANE_OUTPUT_ASYNC_AWAIT_TIMEOUT_MS) { barrier.await() }
 
-            floodDrained.complete(Unit)
             val closed = withTimeout(PANE_OUTPUT_ASYNC_AWAIT_TIMEOUT_MS) { windowCloseSeen.await() }
             assertEquals("@7", closed)
             collector.cancel()
         } finally {
-            floodDrained.complete(Unit)
             client.close()
         }
     }

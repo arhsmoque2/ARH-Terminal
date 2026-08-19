@@ -66,7 +66,7 @@ class AndroidToolRegistryBehavioralTest {
     }
 
     @Test
-    fun getScreenStateReturnsDynamicContentNotCannedString() {
+    fun getScreenStateReturnsDynamicContentNotCannedString() = kotlinx.coroutines.runBlocking {
         val bridge = FakeDynamicAccessibilityBridge()
         val registry = AndroidToolRegistry(bridge)
 
@@ -103,7 +103,7 @@ class AndroidToolRegistryBehavioralTest {
     }
 
     @Test
-    fun performTapDispatchesExactDynamicCoordinates() {
+    fun performTapDispatchesExactDynamicCoordinates() = kotlinx.coroutines.runBlocking {
         val bridge = FakeDynamicAccessibilityBridge()
         val registry = AndroidToolRegistry(bridge)
 
@@ -120,7 +120,7 @@ class AndroidToolRegistryBehavioralTest {
     }
 
     @Test
-    fun openAppAndNodeDetailsExecuteDynamically() {
+    fun openAppAndNodeDetailsExecuteDynamically() = kotlinx.coroutines.runBlocking {
         val bridge = FakeDynamicAccessibilityBridge()
         bridge.currentScreenState = JSONObject().apply {
             put("status", "ok")
@@ -139,6 +139,21 @@ class AndroidToolRegistryBehavioralTest {
 
         val nodeRes = registry.executeTool("android_get_node_details", JSONObject().put("node_id", "submit_btn"))
         assertTrue(nodeRes.content[0].text?.contains("Submit Order") == true)
+    }
+
+    @Test
+    fun consentGateRejectionAbortsMutativeExecution() = kotlinx.coroutines.runBlocking {
+        val bridge = FakeDynamicAccessibilityBridge()
+        val registry = AndroidToolRegistry(bridge)
+        registry.consentGate = com.arh.terminal.core.mcp.tools.ConsentGate { tool, _, tier ->
+            // Reject any CRITICAL tool calls
+            tier != com.arh.terminal.core.mcp.tools.ToolConsentTier.CRITICAL
+        }
+
+        val res = registry.executeTool("android_open_app", JSONObject().put("package_name", "com.dangerous.app"))
+        assertTrue(res.isError)
+        assertTrue(res.content[0].text?.contains("rejected by operator consent gate") == true)
+        assertEquals(0, bridge.launchedApps.size)
     }
 
     @Test

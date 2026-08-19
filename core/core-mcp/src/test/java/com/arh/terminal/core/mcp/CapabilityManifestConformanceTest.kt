@@ -37,7 +37,7 @@ class CapabilityManifestConformanceTest {
     }
 
     @Test
-    fun differentialExecutionOutputsVaryDynamically() {
+    fun differentialExecutionOutputsVaryDynamically() = kotlinx.coroutines.runBlocking {
         val tap1 = registry.executeTool("android_tap", JSONObject().put("x", 100).put("y", 200))
         val tap2 = registry.executeTool("android_tap", JSONObject().put("x", 500).put("y", 600))
 

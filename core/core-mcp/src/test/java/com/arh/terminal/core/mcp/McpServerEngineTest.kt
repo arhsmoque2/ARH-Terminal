@@ -27,7 +27,7 @@ class McpServerEngineTest {
     }
 
     @Test
-    fun executeGetScreenStateReturnsOk() {
+    fun executeGetScreenStateReturnsOk() = kotlinx.coroutines.runBlocking {
         val res = registry.executeTool("android_get_screen_state", JSONObject())
         assertFalse(res.isError)
         assertEquals(1, res.content.size)
@@ -35,7 +35,7 @@ class McpServerEngineTest {
     }
 
     @Test
-    fun executeClipboardBridgeSetsAndGets() {
+    fun executeClipboardBridgeSetsAndGets() = kotlinx.coroutines.runBlocking {
         registry.executeTool("android_set_clipboard", JSONObject().put("text", "hello-from-agent"))
         val getRes = registry.executeTool("android_get_clipboard", JSONObject())
         assertEquals("hello-from-agent", getRes.content[0].text)
