@@ -53,8 +53,11 @@ The application incorporates proven architectural patterns from:
 
 All quality gates pass with zero warnings:
 ```
+[PASS] Secret Leak Scan (Gitleaks): 0 leaks detected
 [PASS] Detekt static analysis: 0 errors
 [PASS] Unit test suites: 671 tests executed, 0 failures
 [PASS] ci_asbuilt_doctor.py: Manifest (17 tools) strictly matches Kotlin code and README.
-[PASS] Debug APK assembled successfully.
+[PASS] Debug APK assembled & signature verified (v1/v2/v3).
+[PASS] Signed Release APK assembled & signature verified (v1/v2/v3, zipalign 4-byte, CN=ARH Terminal).
 ```
+

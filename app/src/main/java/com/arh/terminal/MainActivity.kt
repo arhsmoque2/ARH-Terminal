@@ -23,6 +23,7 @@ class MainActivity : ComponentActivity() {
         handleShareIntent(intent)
 
         setContent {
+            androidx.activity.compose.ReportDrawn()
             ARHTerminalTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
