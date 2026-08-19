@@ -5,10 +5,13 @@ import androidx.lifecycle.viewModelScope
 import com.arh.terminal.core.mcp.server.McpServerEngine
 import com.arh.terminal.core.relay.client.RelayStatus
 import com.arh.terminal.core.relay.client.RelayWebSocketClient
+import com.arh.terminal.data.audit.AgentAuditJournal
+import com.arh.terminal.data.audit.ConsentTier
 import com.arh.terminal.data.profiles.ConnectionProfile
 import com.arh.terminal.data.profiles.ProfileRepository
 import com.arh.terminal.ui.conversation.AgentTurn
 import com.arh.terminal.util.NetworkMonitor
+import com.pocketshell.core.agents.AgentKind
 import com.pocketshell.core.agents.ClaudeCodeParser
 import com.pocketshell.core.agents.ConversationEvent
 import com.pocketshell.core.agents.ConversationRole
@@ -26,6 +29,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.io.File
 import java.nio.charset.StandardCharsets
 import java.util.UUID
 import javax.inject.Inject
@@ -36,7 +40,8 @@ class SessionViewModel @Inject constructor(
     private val profileRepository: ProfileRepository,
     private val networkMonitor: NetworkMonitor,
     private val mcpServerEngine: McpServerEngine,
-    private val relayClient: RelayWebSocketClient
+    private val relayClient: RelayWebSocketClient,
+    private val auditJournal: AgentAuditJournal
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SessionUiState())
@@ -72,55 +77,60 @@ class SessionViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
+            auditJournal.records.collect { recordsList ->
+                _uiState.update { it.copy(auditRecords = recordsList) }
+            }
+        }
+
+        viewModelScope.launch {
             relayClient.status.collect { rStatus ->
                 _uiState.update { it.copy(relayStatus = rStatus) }
                 if (rStatus is RelayStatus.Connected) {
                     _uiState.update {
                         it.copy(connectionStatus = ConnectionStatus.Connected(rStatus.url), isAttached = true)
                     }
-                } else if (rStatus is RelayStatus.Error) {
-                    _uiState.update {
-                        it.copy(connectionStatus = ConnectionStatus.Error(rStatus.error))
-                    }
                 }
-            }
-        }
-
-        viewModelScope.launch {
-            relayClient.incomingMessages.collect { decryptedMsg ->
-                val turns = parseOutputTurns(decryptedMsg)
-                val targetPane = _uiState.value.selectedPaneId ?: "%0"
-                _uiState.update { state ->
-                    val updatedPanes = state.panes.map { p ->
-                        if (p.paneId == targetPane) {
-                            val newHistory = (p.outputHistory + decryptedMsg).takeLast(200)
-                            val newTurns = p.agentTurns + turns
-                            p.copy(outputHistory = newHistory, agentTurns = newTurns)
-                        } else p
-                    }
-                    state.copy(panes = updatedPanes)
-                }
-                detectApprovalPrompts(decryptedMsg)
             }
         }
     }
 
-    fun setTransportMode(mode: TransportMode) = _uiState.update { it.copy(transportMode = mode) }
-    fun updateRelayUrl(url: String) = _uiState.update { it.copy(relayUrl = url) }
-    fun updateRelaySecret(secret: String) = _uiState.update { it.copy(relaySecretKey = secret) }
+    fun setTransportMode(mode: TransportMode) { _uiState.update { it.copy(transportMode = mode) } }
+    fun setHost(host: String) { _uiState.update { it.copy(host = host) } }
+    fun updateHost(host: String) { setHost(host) }
+    fun setPort(port: Int) { _uiState.update { it.copy(port = port) } }
+    fun setUsername(user: String) { _uiState.update { it.copy(username = user) } }
+    fun updateUsername(user: String) { setUsername(user) }
+    fun setRelayUrl(url: String) { _uiState.update { it.copy(relayUrl = url) } }
+    fun setRelaySecretKey(key: String) { _uiState.update { it.copy(relaySecretKey = key) } }
+    fun setViewMode(mode: ViewMode) { _uiState.update { it.copy(viewMode = mode) } }
 
-    fun toggleMcpServer(start: Boolean, port: Int = 8070, token: String = "ca48ffe8-cb63-45be-bfd5-1911e367fbcd") {
-        if (start) {
-            mcpServerEngine.start(port, token)
-        } else {
+    fun toggleJoypad() {
+        _uiState.update { it.copy(showJoypad = !it.showJoypad) }
+    }
+
+    fun toggleTmuxPicker(show: Boolean) {
+        _uiState.update { it.copy(showTmuxPicker = show) }
+    }
+
+    fun toggleMacrosModal(show: Boolean) {
+        _uiState.update { it.copy(showMacrosModal = show) }
+    }
+
+    fun toggleMcpServer() {
+        if (_uiState.value.mcpStats.isRunning) {
             mcpServerEngine.stop()
+            auditJournal.recordAction("MCP Server", "server_stop", "Stopped on-device HTTP daemon", ConsentTier.READ_ONLY)
+        } else {
+            mcpServerEngine.start()
+            auditJournal.recordAction("MCP Server", "server_start", "Started daemon on port 8070", ConsentTier.READ_ONLY)
         }
     }
 
-    fun selectProfile(profile: ConnectionProfile) {
+    fun selectProfile(profileId: String) {
+        val profile = _uiState.value.profiles.find { it.id == profileId } ?: return
         _uiState.update {
             it.copy(
-                selectedProfileId = profile.id,
+                selectedProfileId = profileId,
                 host = profile.host,
                 port = profile.port,
                 username = profile.username,
@@ -130,273 +140,265 @@ class SessionViewModel @Inject constructor(
     }
 
     fun saveCurrentAsProfile(name: String) {
-        if (name.isBlank()) return
-        val current = _uiState.value
         val newProfile = ConnectionProfile(
-            name = name.trim(),
-            host = current.host,
-            port = current.port,
-            username = current.username,
-            defaultSession = current.activeSessionName
+            name = name,
+            host = _uiState.value.host,
+            port = _uiState.value.port,
+            username = _uiState.value.username,
+            defaultSession = _uiState.value.activeSessionName
         )
         profileRepository.addProfile(newProfile)
     }
 
-    fun updateHost(host: String) = _uiState.update { it.copy(host = host) }
-    fun updateUsername(user: String) = _uiState.update { it.copy(username = user) }
-    fun updatePort(port: Int) = _uiState.update { it.copy(port = port) }
-    fun setViewMode(mode: ViewMode) = _uiState.update { it.copy(viewMode = mode) }
-    fun setPendingSharedPrompt(text: String) = _uiState.update { it.copy(pendingSharedPrompt = text) }
-    fun clearPendingSharedPrompt() = _uiState.update { it.copy(pendingSharedPrompt = null) }
-    fun toggleMacrosModal(show: Boolean) = _uiState.update { it.copy(showMacrosModal = show) }
-
     fun connect(privateKeyPem: String = "") {
         lastUsedKeyPem = privateKeyPem
-        val currentState = _uiState.value
 
-        if (currentState.transportMode == TransportMode.RelayWebSocket) {
-            _uiState.update { it.copy(connectionStatus = ConnectionStatus.Connecting("Connecting to E2EE Relay ${currentState.relayUrl}...")) }
-            relayClient.connect(currentState.relayUrl, currentState.relaySecretKey, currentState.activeSessionName)
-            val initialPane = PaneData(paneId = "%0", windowId = "@0", title = "Relay Session")
-            _uiState.update { it.copy(panes = listOf(initialPane), selectedPaneId = "%0") }
+        if (_uiState.value.transportMode == TransportMode.RelayWebSocket) {
+            connectRelay()
             return
         }
 
-        _uiState.update { it.copy(connectionStatus = ConnectionStatus.Connecting("Opening SSH to ${currentState.host}...")) }
-
         viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val keyContent = if (privateKeyPem.isNotBlank()) privateKeyPem else "DUMMY_KEY"
-                val key = SshKey.Pem(keyContent)
-                val sshResult = SshConnection.connect(
-                    host = currentState.host,
-                    port = currentState.port,
-                    user = currentState.username,
-                    key = key,
-                    knownHosts = KnownHostsPolicy.AcceptAll
-                )
+            _uiState.update { it.copy(connectionStatus = ConnectionStatus.Connecting("Connecting to ${_uiState.value.host}...")) }
 
-                if (sshResult.isFailure) {
-                    val err = sshResult.exceptionOrNull()?.message ?: "SSH connection failed"
-                    _uiState.update { it.copy(connectionStatus = ConnectionStatus.Error(err)) }
-                    return@launch
-                }
+            val key = if (privateKeyPem.isNotBlank()) {
+                SshKey.Pem(privateKeyPem)
+            } else {
+                SshKey.Path(File("/dev/null"))
+            }
 
-                val session = sshResult.getOrThrow()
+            val result = SshConnection.connect(
+                host = _uiState.value.host,
+                port = _uiState.value.port,
+                user = _uiState.value.username,
+                key = key,
+                knownHosts = KnownHostsPolicy.AcceptAll
+            )
+
+            result.onSuccess { session ->
                 activeSshSession = session
-
-                _uiState.update {
-                    it.copy(
-                        connectionStatus = ConnectionStatus.Connected(host = currentState.host),
-                        isAttached = true
-                    )
-                }
-
-                attachTmuxClient(session)
-
-            } catch (e: Exception) {
-                _uiState.update { it.copy(connectionStatus = ConnectionStatus.Error(e.message ?: "Unknown error")) }
+                _uiState.update { it.copy(connectionStatus = ConnectionStatus.Connected(_uiState.value.host)) }
+                auditJournal.recordAction("SSH Transport", "session_open", "Connected to ${_uiState.value.host}:${_uiState.value.port}", ConsentTier.READ_ONLY)
+                
+                _uiState.update { it.copy(showTmuxPicker = true) }
+                attachTmux(_uiState.value.activeSessionName)
+            }.onFailure { error ->
+                _uiState.update { it.copy(connectionStatus = ConnectionStatus.Error(error.message ?: "Connection failed")) }
             }
         }
     }
 
-    private fun attachTmuxClient(session: SshSession) {
-        val tmuxClient = tmuxFactory.create(session)
-        activeTmuxClient = tmuxClient
-
-        _uiState.update { it.copy(isAttached = true) }
-
-        viewModelScope.launch(Dispatchers.IO) {
-            tmuxClient.connect()
-            tmuxClient.events.collect { event ->
-                handleControlEvent(event)
-            }
-        }
+    fun disconnect() {
+        detachTmux()
+        activeSshSession?.close()
+        activeSshSession = null
+        relayClient.disconnect()
+        _uiState.update { it.copy(connectionStatus = ConnectionStatus.Disconnected, isAttached = false) }
+        auditJournal.recordAction("Session", "disconnect", "Disconnected from host", ConsentTier.READ_ONLY)
     }
 
-    fun toggleAttach(attach: Boolean) {
-        val session = activeSshSession ?: return
-        if (attach) {
-            attachTmuxClient(session)
+    private fun connectRelay() {
+        relayClient.connect(_uiState.value.relayUrl, _uiState.value.relaySecretKey)
+        auditJournal.recordAction("E2EE Relay", "relay_connect", "Connected to ${_uiState.value.relayUrl}", ConsentTier.READ_ONLY)
+    }
+
+    fun toggleAttach() {
+        if (_uiState.value.isAttached) {
+            detachTmux()
         } else {
-            viewModelScope.launch(Dispatchers.IO) {
-                activeTmuxClient?.sendCommand("detach-client")
-                activeTmuxClient = null
-                _uiState.update { it.copy(isAttached = false) }
-            }
+            attachTmux(_uiState.value.activeSessionName)
         }
     }
 
     fun switchSession(sessionName: String) {
-        if (sessionName == _uiState.value.activeSessionName) return
-        val session = activeSshSession ?: return
-        viewModelScope.launch(Dispatchers.IO) {
-            activeTmuxClient?.sendCommand("detach-client")
-            activeTmuxClient = null
-            _uiState.update { it.copy(activeSessionName = sessionName, panes = emptyList(), isAttached = true) }
-            attachTmuxClient(session)
-        }
+        attachTmux(sessionName)
     }
 
     fun createNewSession(sessionName: String) {
-        if (sessionName.isBlank()) return
-        _uiState.update {
-            val sessions = (it.availableSessions + sessionName.trim()).distinct()
-            it.copy(availableSessions = sessions)
-        }
-        switchSession(sessionName.trim())
+        attachTmux(sessionName)
     }
 
-    private fun handleControlEvent(event: ControlEvent) {
+    fun attachTmux(sessionName: String) {
+        val ssh = activeSshSession ?: return
+        _uiState.update { it.copy(activeSessionName = sessionName, isAttached = true, showTmuxPicker = false) }
+
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val client = tmuxFactory.create(ssh, sessionName)
+                activeTmuxClient = client
+                client.connect()
+
+                client.events.collect { event ->
+                    handleTmuxEvent(event)
+                }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(connectionStatus = ConnectionStatus.Error("psmux attach failed: ${e.message}")) }
+            }
+        }
+    }
+
+    fun detachTmux() {
+        activeTmuxClient?.close()
+        activeTmuxClient = null
+        _uiState.update { it.copy(isAttached = false) }
+        auditJournal.recordAction("psmux", "detach", "Detached from session ${_uiState.value.activeSessionName}", ConsentTier.READ_ONLY)
+    }
+
+    fun selectPane(paneId: String) {
+        _uiState.update { it.copy(selectedPaneId = paneId) }
+    }
+
+    fun approvePrompt() {
+        approveCommand()
+    }
+
+    fun approveCommand() {
+        val cmd = _uiState.value.pendingApprovalCommand
+        auditJournal.recordAction("Approval HUD", "approve_command", cmd ?: "unknown", ConsentTier.MUTATIVE, approved = true)
+        sendCommand("y\n")
+        _uiState.update { it.copy(pendingApprovalCommand = null) }
+    }
+
+    fun rejectCommand() {
+        val cmd = _uiState.value.pendingApprovalCommand
+        auditJournal.recordAction("Approval HUD", "reject_command", cmd ?: "unknown", ConsentTier.MUTATIVE, approved = false)
+        sendCommand("n\n")
+        _uiState.update { it.copy(pendingApprovalCommand = null) }
+    }
+
+    fun sendRawKey(keySeq: String) {
+        sendCommand(keySeq)
+    }
+
+    fun sendCommand(text: String) {
+        val target = _uiState.value.selectedPaneId ?: return
+        val client = activeTmuxClient ?: return
+        viewModelScope.launch(Dispatchers.IO) {
+            client.sendKeysViaExec("send-keys -t $target \"$text\"")
+        }
+    }
+
+    fun sendPrompt(promptText: String) {
+        val target = _uiState.value.selectedPaneId ?: _uiState.value.panes.firstOrNull()?.paneId ?: return
+        if (promptText.isBlank()) return
+
+        auditJournal.recordAction("Agent Prompt", "send_prompt", promptText.take(60), ConsentTier.MUTATIVE)
+
+        if (_uiState.value.transportMode == TransportMode.RelayWebSocket) {
+            relayClient.send(promptText)
+            return
+        }
+
+        val client = activeTmuxClient ?: return
+        viewModelScope.launch(Dispatchers.IO) {
+            client.sendKeysViaExec("send-keys -t $target \"$promptText\" Enter")
+        }
+    }
+
+    fun setPendingSharedPrompt(text: String) {
+        handleSharedPrompt(text)
+    }
+
+    fun handleSharedPrompt(text: String) {
+        _uiState.update { it.copy(pendingSharedPrompt = text) }
+    }
+
+    fun clearSharedPrompt() {
+        _uiState.update { it.copy(pendingSharedPrompt = null) }
+    }
+
+    private fun handleTmuxEvent(event: ControlEvent) {
         when (event) {
+            is ControlEvent.Output -> {
+                val pId = event.paneId
+                val rawText = String(event.data, StandardCharsets.UTF_8)
+
+                if (rawText.contains("[y/n]") || rawText.contains("Do you want to proceed?")) {
+                    _uiState.update { it.copy(pendingApprovalCommand = rawText.trim()) }
+                }
+
+                _uiState.update { state ->
+                    val existingPane = state.panes.find { it.paneId == pId }
+                    val currentTurns = existingPane?.agentTurns ?: emptyList()
+                    val newTurns = parseOutputTurns(rawText, currentTurns)
+
+                    val updatedPanes = if (existingPane != null) {
+                        state.panes.map { p ->
+                            if (p.paneId == pId) {
+                                p.copy(
+                                    outputHistory = (p.outputHistory + rawText).takeLast(100),
+                                    agentTurns = newTurns
+                                )
+                            } else p
+                        }
+                    } else {
+                        state.panes + PaneData(
+                            paneId = pId,
+                            windowId = "@0",
+                            title = "Agent Pane ($pId)",
+                            outputHistory = listOf(rawText),
+                            agentTurns = newTurns
+                        )
+                    }
+
+                    state.copy(
+                        panes = updatedPanes,
+                        selectedPaneId = state.selectedPaneId ?: pId
+                    )
+                }
+            }
             is ControlEvent.SessionChanged -> {
                 _uiState.update { it.copy(activeSessionName = event.name) }
-            }
-            is ControlEvent.WindowAdd -> {
-                val pane = PaneData(
-                    paneId = "%0",
-                    windowId = event.windowId,
-                    title = "Window ${event.windowId}"
-                )
-                _uiState.update { state ->
-                    val existing = state.panes.filterNot { it.windowId == event.windowId }
-                    state.copy(panes = existing + pane, selectedPaneId = pane.paneId)
-                }
-                listenToPaneOutput("%0")
-            }
-            is ControlEvent.WindowClose -> {
-                _uiState.update { state ->
-                    val filtered = state.panes.filterNot { it.windowId == event.windowId }
-                    state.copy(panes = filtered, selectedPaneId = filtered.firstOrNull()?.paneId)
-                }
             }
             else -> Unit
         }
     }
 
-    private fun listenToPaneOutput(paneId: String) {
-        val client = activeTmuxClient ?: return
-        viewModelScope.launch(Dispatchers.IO) {
-            client.outputFor(paneId).collect { outputEvent ->
-                val text = String(outputEvent.data, StandardCharsets.UTF_8)
-                val turns = parseOutputTurns(text)
+    private fun parseOutputTurns(chunk: String, currentTurns: List<AgentTurn>): List<AgentTurn> {
+        val turns = currentTurns.toMutableList()
+        val events = claudeParser.parseLine(chunk)
 
-                _uiState.update { state ->
-                    val updatedPanes = state.panes.map { p ->
-                        if (p.paneId == paneId) {
-                            val newHistory = (p.outputHistory + text).takeLast(200)
-                            val newTurns = p.agentTurns + turns
-                            p.copy(outputHistory = newHistory, agentTurns = newTurns)
-                        } else p
+        for (e in events) {
+            when (e) {
+                is ConversationEvent.Message -> {
+                    if (e.role == ConversationRole.User) {
+                        turns.add(
+                            AgentTurn.UserMessage(
+                                id = e.id,
+                                timestamp = e.atMillis ?: System.currentTimeMillis(),
+                                text = e.text
+                            )
+                        )
+                    } else {
+                        turns.add(
+                            AgentTurn.AssistantMessage(
+                                id = e.id,
+                                timestamp = e.atMillis ?: System.currentTimeMillis(),
+                                agent = e.agent,
+                                text = e.text
+                            )
+                        )
                     }
-                    state.copy(panes = updatedPanes)
                 }
-                detectApprovalPrompts(text)
-            }
-        }
-    }
-
-    private fun parseOutputTurns(text: String): List<AgentTurn> {
-        val turns = mutableListOf<AgentTurn>()
-        val lines = text.lines()
-        for (line in lines) {
-            val events = claudeParser.parseLine(line)
-            for (evt in events) {
-                val time = evt.atMillis ?: System.currentTimeMillis()
-                when (evt) {
-                    is ConversationEvent.Message -> {
-                        if (evt.role == ConversationRole.User) {
-                            turns.add(AgentTurn.UserMessage(evt.id, time, evt.text))
-                        } else {
-                            turns.add(AgentTurn.AssistantMessage(evt.id, time, evt.agent, evt.text))
-                        }
-                    }
-                    is ConversationEvent.ToolCall -> {
-                        turns.add(AgentTurn.ToolInvocation(evt.id, time, evt.name, evt.input))
-                    }
-                    is ConversationEvent.ToolResult -> {
-                        val lastIdx = turns.indexOfLast { it is AgentTurn.ToolInvocation }
-                        if (lastIdx >= 0) {
-                            val prev = turns[lastIdx] as AgentTurn.ToolInvocation
-                            turns[lastIdx] = prev.copy(output = evt.output)
-                        }
-                    }
-                    else -> Unit
+                is ConversationEvent.ToolCall -> {
+                    turns.add(
+                        AgentTurn.ToolInvocation(
+                            id = e.id,
+                            timestamp = e.atMillis ?: System.currentTimeMillis(),
+                            toolName = e.name,
+                            arguments = e.input
+                        )
+                    )
                 }
+                is ConversationEvent.ToolResult -> {
+                    val last = turns.lastOrNull()
+                    if (last is AgentTurn.ToolInvocation && last.id == e.toolCallId) {
+                        turns[turns.lastIndex] = last.copy(output = e.output)
+                    }
+                }
+                else -> Unit
             }
         }
-        return turns
-    }
-
-    private fun detectApprovalPrompts(text: String) {
-        if (text.contains("[y/n]", ignoreCase = true) || text.contains("Approve command:", ignoreCase = true)) {
-            _uiState.update { it.copy(pendingApprovalCommand = text.trim()) }
-        }
-    }
-
-    fun sendPrompt(prompt: String) {
-        if (prompt.isBlank()) return
-        val userTurn = AgentTurn.UserMessage(
-            id = UUID.randomUUID().toString(),
-            timestamp = System.currentTimeMillis(),
-            text = prompt
-        )
-        val targetPane = _uiState.value.selectedPaneId ?: "%0"
-        _uiState.update { state ->
-            val updatedPanes = state.panes.map { p ->
-                if (p.paneId == targetPane) p.copy(agentTurns = p.agentTurns + userTurn) else p
-            }
-            state.copy(panes = updatedPanes)
-        }
-
-        if (_uiState.value.transportMode == TransportMode.RelayWebSocket) {
-            relayClient.send(prompt, type = "prompt")
-            return
-        }
-
-        val client = activeTmuxClient ?: return
-        viewModelScope.launch(Dispatchers.IO) {
-            client.sendCommand("send-keys -t $targetPane \"$prompt\" Enter")
-        }
-    }
-
-    fun sendRawKey(rawSequence: String) {
-        if (_uiState.value.transportMode == TransportMode.RelayWebSocket) {
-            relayClient.send(rawSequence, type = "raw-key")
-            return
-        }
-        val client = activeTmuxClient ?: return
-        val targetPane = _uiState.value.selectedPaneId ?: "%0"
-        viewModelScope.launch(Dispatchers.IO) {
-            client.sendCommand("send-keys -t $targetPane \"$rawSequence\"")
-        }
-    }
-
-    fun approvePrompt(approve: Boolean) {
-        val reply = if (approve) "y" else "n"
-        if (_uiState.value.transportMode == TransportMode.RelayWebSocket) {
-            relayClient.send(reply, type = "approval")
-            _uiState.update { it.copy(pendingApprovalCommand = null) }
-            return
-        }
-        val client = activeTmuxClient ?: return
-        val targetPane = _uiState.value.selectedPaneId ?: "%0"
-        viewModelScope.launch(Dispatchers.IO) {
-            client.sendCommand("send-keys -t $targetPane \"$reply\" Enter")
-        }
-        _uiState.update { it.copy(pendingApprovalCommand = null) }
-    }
-
-    fun disconnect() {
-        relayClient.disconnect()
-        activeTmuxClient = null
-        activeSshSession = null
-        _uiState.update {
-            it.copy(
-                connectionStatus = ConnectionStatus.Disconnected,
-                panes = emptyList(),
-                isAttached = false
-            )
-        }
+        return turns.takeLast(100)
     }
 }

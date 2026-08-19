@@ -3,6 +3,7 @@ package com.arh.terminal.ui.session
 import androidx.compose.runtime.Immutable
 import com.arh.terminal.core.mcp.server.McpServerStats
 import com.arh.terminal.core.relay.client.RelayStatus
+import com.arh.terminal.data.audit.AuditRecord
 import com.arh.terminal.data.profiles.ConnectionProfile
 import com.arh.terminal.ui.conversation.AgentTurn
 import com.arh.terminal.util.NetworkStatus
@@ -11,7 +12,8 @@ import com.arh.terminal.util.NetworkType
 enum class ViewMode {
     AgentChat,
     RawTerminal,
-    McpBridge
+    McpBridge,
+    AuditLog
 }
 
 enum class TransportMode {
@@ -48,15 +50,18 @@ data class SessionUiState(
     val relayStatus: RelayStatus = RelayStatus.Disconnected,
     val isAttached: Boolean = true,
     val activeSessionName: String = "arh-agent",
-    val availableSessions: List<String> = listOf("arh-agent", "build-runner", "scratchpad"),
+    val availableSessions: List<String> = listOf("arh-agent", "urus-fleet", "build-runner"),
     val profiles: List<ConnectionProfile> = emptyList(),
     val selectedProfileId: String? = "default-win-box",
     val networkStatus: NetworkStatus = NetworkStatus(isConnected = true, type = NetworkType.Wifi),
     val mcpStats: McpServerStats = McpServerStats(),
+    val auditRecords: List<AuditRecord> = emptyList(),
     val viewMode: ViewMode = ViewMode.AgentChat,
     val panes: List<PaneData> = emptyList(),
     val selectedPaneId: String? = null,
     val pendingApprovalCommand: String? = null,
     val pendingSharedPrompt: String? = null,
-    val showMacrosModal: Boolean = false
+    val showMacrosModal: Boolean = false,
+    val showTmuxPicker: Boolean = false,
+    val showJoypad: Boolean = false
 )

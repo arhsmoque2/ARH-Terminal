@@ -69,7 +69,11 @@ import com.arh.terminal.core.mcp.server.McpServerStats
 import com.arh.terminal.data.profiles.ConnectionProfile
 import com.arh.terminal.ui.components.FloatingApprovalHud
 import com.arh.terminal.ui.components.WorkflowMacrosModal
+import com.arh.terminal.ui.components.TmuxSessionPickerModal
+import com.arh.terminal.ui.components.GamepadJoypadBar
 import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.SportsEsports
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.ContentPaste
 import com.arh.terminal.ui.components.QuickActionBar
 import com.arh.terminal.ui.conversation.AgentTurnCard
@@ -154,12 +158,12 @@ fun SessionScreen(
                 ConnectionSetupCard(
                     state = state,
                     error = (status as? ConnectionStatus.Error)?.message,
-                    onSelectProfile = viewModel::selectProfile,
+                    onSelectProfile = { profile -> viewModel.selectProfile(profile.id) },
                     onSaveProfile = viewModel::saveCurrentAsProfile,
                     onHostChange = viewModel::updateHost,
                     onUserChange = viewModel::updateUsername,
                     onConnect = { password -> viewModel.connect(password) },
-                    onToggleMcp = viewModel::toggleMcpServer
+                    onToggleMcp = { _, _, _ -> viewModel.toggleMcpServer() }
                 )
             }
             is ConnectionStatus.Connecting -> {
@@ -184,12 +188,12 @@ fun SessionScreen(
                     state = state,
                     viewModel = viewModel,
                     onSend = viewModel::sendPrompt,
-                    onApprove = viewModel::approvePrompt,
+                    onApprove = { if (it) viewModel.approveCommand() else viewModel.rejectCommand() },
                     onViewModeChange = viewModel::setViewMode,
-                    onToggleAttach = viewModel::toggleAttach,
+                    onToggleAttach = { if (it) viewModel.attachTmux(state.activeSessionName) else viewModel.detachTmux() },
                     onSelectSession = viewModel::switchSession,
                     onCreateSession = viewModel::createNewSession,
-                    onToggleMcp = viewModel::toggleMcpServer
+                    onToggleMcp = { _, _, _ -> viewModel.toggleMcpServer() }
                 )
             }
         }
@@ -528,6 +532,7 @@ private fun ConnectedSessionView(
                 ViewMode.AgentChat -> 0
                 ViewMode.RawTerminal -> 1
                 ViewMode.McpBridge -> 2
+                ViewMode.AuditLog -> 3
             }
         ) {
             Tab(
@@ -547,6 +552,12 @@ private fun ConnectedSessionView(
                 onClick = { onViewModeChange(ViewMode.McpBridge) },
                 text = { Text("MCP Bridge") },
                 icon = { Icon(Icons.Default.Sensors, contentDescription = null) }
+            )
+            Tab(
+                selected = state.viewMode == ViewMode.AuditLog,
+                onClick = { onViewModeChange(ViewMode.AuditLog) },
+                text = { Text("Audit Log") },
+                icon = { Icon(Icons.Default.History, contentDescription = null) }
             )
         }
 
@@ -633,15 +644,26 @@ private fun ConnectedSessionView(
         }
 
         // --- 🌟 1-Tap DPIK & ARH Workflow Macros Drawer ---
-        if (state.showMacrosModal) {
-            WorkflowMacrosModal(
-                onSelectMacro = { cmd ->
-                    viewModel.sendPrompt(cmd)
-                    viewModel.toggleMacrosModal(false)
-                },
-                onDismiss = { viewModel.toggleMacrosModal(false) }
-            )
-        }
+        
+    // 🌟 Tmux Session Discovery Picker Modal (moggsh pattern)
+    if (state.showTmuxPicker) {
+        TmuxSessionPickerModal(
+            sessions = state.availableSessions,
+            onSelectSession = { viewModel.attachTmux(it) },
+            onCreateNewSession = { viewModel.attachTmux(it) },
+            onDismiss = { viewModel.toggleTmuxPicker(false) }
+        )
+    }
+
+    if (state.showMacrosModal) {
+        WorkflowMacrosModal(
+            onTriggerMacro = { cmd ->
+                viewModel.sendPrompt(cmd)
+                viewModel.toggleMacrosModal(false)
+            },
+            onDismiss = { viewModel.toggleMacrosModal(false) }
+        )
+    }
 
         // --- ⚡ Moggsh-style Floating Approval HUD ---
         if (state.viewMode != ViewMode.McpBridge) {
@@ -653,7 +675,15 @@ private fun ConnectedSessionView(
 
         // --- ⌨️ Quick-Action Extended Key Bar ---
         if (state.isAttached && state.viewMode != ViewMode.McpBridge) {
-            QuickActionBar(
+            
+                // 🎮 Gamepad Joypad Navigation (moggsh pattern)
+                if (state.showJoypad) {
+                    GamepadJoypadBar(
+                        onSendKey = { viewModel.sendRawKey(it) }
+                    )
+                }
+
+                QuickActionBar(
                 onSendKey = { key -> viewModel.sendRawKey(key.rawSequence) }
             )
         }
@@ -797,6 +827,81 @@ private fun McpBridgeDashboard(
                     color = Color(0xFF10B981),
                     fontFamily = FontFamily.Monospace
                 )
+            }
+        }
+    }
+}
+
+
+@Composable
+fun AuditLogView(
+    records: List<com.arh.terminal.data.audit.AuditRecord>,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF16161E)),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            Text(
+                text = "🛡️ Agent Security & Action Audit Journal",
+                style = MaterialTheme.typography.titleMedium.copy(color = Color.White, fontWeight = FontWeight.Bold)
+            )
+            Text(
+                text = "${records.size} Total Actions Logged (Hardware Consent Gate)",
+                color = Color.Gray,
+                fontSize = 12.sp,
+                modifier = Modifier.padding(top = 2.dp, bottom = 10.dp)
+            )
+
+            if (records.isEmpty()) {
+                Text(
+                    text = "No actions logged yet. Agent commands will be recorded here.",
+                    color = Color.Gray,
+                    fontSize = 13.sp
+                )
+            } else {
+                androidx.compose.foundation.lazy.LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    items(records) { record ->
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E2E)),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(10.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                        Text(record.timestamp, color = Color.Gray, fontSize = 11.sp, fontFamily = FontFamily.Monospace)
+                                        Text(record.agentName, color = Color(0xFF61AFEF), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                    Text(
+                                        record.details,
+                                        color = Color.White,
+                                        fontSize = 12.sp,
+                                        fontFamily = FontFamily.Monospace,
+                                        modifier = Modifier.padding(top = 2.dp)
+                                    )
+                                }
+                                Text(
+                                    text = record.tier.name,
+                                    color = if (record.tier == com.arh.terminal.data.audit.ConsentTier.MUTATIVE) Color(0xFFE5C07B) else Color(0xFF98C379),
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+                }
             }
         }
     }
