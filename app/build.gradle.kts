@@ -24,9 +24,14 @@ android {
     signingConfigs {
         create("release") {
             storeFile = file("${rootDir}/arh-release.jks")
-            storePassword = System.getenv("KEYSTORE_PASSWORD") ?: "arhterminal2026"
+            // No hardcoded fallback password here on purpose (see GOTCHAS.md #6): a wrong
+            // baked-in default doesn't make the build succeed, it just turns a missing-secret
+            // error into a much more confusing keystore BadPaddingException later. Leaving
+            // these null when the env vars are unset lets the taskGraph check below fail fast
+            // with an actionable message instead.
+            storePassword = System.getenv("KEYSTORE_PASSWORD")
             keyAlias = "arh-terminal"
-            keyPassword = System.getenv("KEY_PASSWORD") ?: "arhterminal2026"
+            keyPassword = System.getenv("KEY_PASSWORD")
             enableV1Signing = true
             enableV2Signing = true
             enableV3Signing = true
@@ -61,6 +66,30 @@ detekt {
     buildUponDefaultConfig = true
     config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
     source.setFrom("src/main/java")
+}
+
+// Fail fast with an actionable message when a release-signing task actually runs without
+// real credentials, instead of letting AGP fail deep inside keystore decryption. Scoped to
+// the task graph so debug/test/detekt/lint runs are never affected by missing release secrets.
+gradle.taskGraph.whenReady {
+    val needsReleaseSigning = allTasks.any { task ->
+        task.project == project && task.name.contains("Release")
+    }
+    if (needsReleaseSigning) {
+        val missing = listOfNotNull(
+            "KEYSTORE_PASSWORD".takeIf { System.getenv("KEYSTORE_PASSWORD").isNullOrBlank() },
+            "KEY_PASSWORD".takeIf { System.getenv("KEY_PASSWORD").isNullOrBlank() }
+        )
+        if (missing.isNotEmpty()) {
+            throw GradleException(
+                "Release signing requires ${missing.joinToString(" and ")} to be set to the " +
+                    "actual arh-release.jks credentials (env var, or repo secret in CI). " +
+                    "There is intentionally no fallback default: a wrong hardcoded password " +
+                    "used to fail here with a confusing keystore BadPaddingException instead " +
+                    "of this message. See GOTCHAS.md #6."
+            )
+        }
+    }
 }
 
 dependencies {
