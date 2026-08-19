@@ -16,6 +16,9 @@ class ARHTerminalApp : Application() {
     @Inject
     lateinit var auditJournal: AgentAuditJournal
 
+    @Inject
+    lateinit var knownHostsStore: com.arh.terminal.data.security.KnownHostsStore
+
     override fun onCreate() {
         super.onCreate()
         val profilesFile = File(filesDir, "arh_profiles.tsv")
@@ -23,5 +26,7 @@ class ARHTerminalApp : Application() {
 
         val auditFile = File(filesDir, "arh_audit_journal.tsv")
         auditJournal.configureStorage(auditFile)
+
+        knownHostsStore.initialize(this)
     }
 }

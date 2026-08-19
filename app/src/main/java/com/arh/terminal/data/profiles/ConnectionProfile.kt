@@ -21,12 +21,7 @@ data class ConnectionProfile(
     val privateKeyPem: String = ""
 ) {
     fun toSerialized(): String {
-        val safeKey = if (privateKeyPem.isNotBlank()) {
-            val encoded = java.util.Base64.getEncoder().encodeToString(privateKeyPem.toByteArray(Charsets.UTF_8))
-            "enc:$encoded"
-        } else {
-            ""
-        }
+        val safeKey = com.arh.terminal.data.security.CredentialCrypto.encrypt(privateKeyPem)
         return listOf(id, name, host, port.toString(), username, defaultSession, safeKey)
             .joinToString("\t")
     }
@@ -36,15 +31,7 @@ data class ConnectionProfile(
             val parts = line.split("\t")
             if (parts.size < 5) return null
             val rawKey = if (parts.size > 6) parts[6] else ""
-            val resolvedKey = if (rawKey.startsWith("enc:")) {
-                try {
-                    String(java.util.Base64.getDecoder().decode(rawKey.removePrefix("enc:")), Charsets.UTF_8)
-                } catch (_: Exception) {
-                    rawKey
-                }
-            } else {
-                rawKey
-            }
+            val resolvedKey = com.arh.terminal.data.security.CredentialCrypto.decrypt(rawKey)
             return ConnectionProfile(
                 id = parts[0],
                 name = parts[1],

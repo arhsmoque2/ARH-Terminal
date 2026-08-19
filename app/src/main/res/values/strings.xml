@@ -1,4 +1,9 @@
 <resources>
     <string name="app_name">ARH Terminal</string>
     <string name="accessibility_service_description">Enables on-device AI agent screen introspection, touch gestures, and remote developer pairing.</string>
+    <string name="notif_channel_session_name">Active Terminal Sessions</string>
+    <string name="notif_channel_session_desc">Keeps background SSH and tmux sessions active and protected against battery optimization kills</string>
+    <string name="notif_session_connected">Connected to %1$s (%2$s)</string>
+    <string name="notif_session_disconnect">Disconnect</string>
 </resources>
+

@@ -26,12 +26,23 @@ class SessionViewModelTest {
     private val mcpServerEngine: McpServerEngine = mockk(relaxed = true)
     private val relayClient: RelayWebSocketClient = mockk(relaxed = true)
     private val auditJournal: com.arh.terminal.data.audit.AgentAuditJournal = com.arh.terminal.data.audit.AgentAuditJournal()
+    private val knownHostsStore: com.arh.terminal.data.security.KnownHostsStore = mockk(relaxed = true)
+    private val context: android.content.Context = mockk(relaxed = true)
     private lateinit var viewModel: SessionViewModel
 
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
-        viewModel = SessionViewModel(factory, profileRepository, networkMonitor, mcpServerEngine, relayClient, auditJournal)
+        viewModel = SessionViewModel(
+            factory,
+            profileRepository,
+            networkMonitor,
+            mcpServerEngine,
+            relayClient,
+            auditJournal,
+            knownHostsStore,
+            context
+        )
     }
 
     @After

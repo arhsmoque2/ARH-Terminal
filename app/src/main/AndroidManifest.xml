@@ -3,11 +3,13 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.VIBRATE" />
 
     <application
         android:name=".ARHTerminalApp"
-        android:allowBackup="true"
+        android:allowBackup="false"
         android:icon="@android:drawable/sym_def_app_icon"
         android:label="@string/app_name"
         android:roundIcon="@android:drawable/sym_def_app_icon"
@@ -31,6 +33,12 @@
                 <data android:mimeType="text/plain" />
             </intent-filter>
         </activity>
+
+        <!-- 🌟 Foreground Service to keep SSH & tmux alive across Doze and app-switch -->
+        <service
+            android:name=".service.TerminalSessionService"
+            android:foregroundServiceType="dataSync"
+            android:exported="false" />
 
         <!-- 🌟 Real Android Accessibility Service for On-Device Agent Remote Control -->
         <service

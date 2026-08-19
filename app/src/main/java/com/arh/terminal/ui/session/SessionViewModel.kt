@@ -24,7 +24,12 @@ import com.pocketshell.core.tmux.TmuxClientFactory
 import com.pocketshell.core.tmux.protocol.ControlEvent
 import com.arh.terminal.core.mcp.tools.ConsentGate
 import com.arh.terminal.core.mcp.tools.ToolConsentTier
+import com.arh.terminal.data.security.KnownHostsStore
+import com.arh.terminal.data.security.TofuHostKeyVerifier
+import com.arh.terminal.service.TerminalSessionService
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import android.content.Context
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -44,7 +49,9 @@ class SessionViewModel @Inject constructor(
     private val networkMonitor: NetworkMonitor,
     private val mcpServerEngine: McpServerEngine,
     private val relayClient: RelayWebSocketClient,
-    private val auditJournal: AgentAuditJournal
+    private val auditJournal: AgentAuditJournal,
+    private val knownHostsStore: KnownHostsStore,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SessionUiState())
@@ -174,12 +181,16 @@ class SessionViewModel @Inject constructor(
                 SshKey.Path(File("/dev/null"))
             }
 
+            val tofuVerifier = TofuHostKeyVerifier(knownHostsStore) { msg ->
+                auditJournal.recordAction("HostKey", "tofu_verification", msg, ConsentTier.READ_ONLY)
+            }
+
             val result = SshConnection.connect(
                 host = _uiState.value.host,
                 port = _uiState.value.port,
                 user = _uiState.value.username,
                 key = key,
-                knownHosts = KnownHostsPolicy.AcceptAll
+                knownHosts = KnownHostsPolicy.Custom(tofuVerifier)
             )
 
             result.onSuccess { session ->
@@ -187,15 +198,20 @@ class SessionViewModel @Inject constructor(
                 _uiState.update { it.copy(connectionStatus = ConnectionStatus.Connected(_uiState.value.host)) }
                 auditJournal.recordAction("SSH Transport", "session_open", "Connected to ${_uiState.value.host}:${_uiState.value.port}", ConsentTier.READ_ONLY)
                 
+                // 🌟 Keep connection alive in background via Foreground Service
+                TerminalSessionService.start(context, _uiState.value.host, _uiState.value.activeSessionName)
+
                 _uiState.update { it.copy(showTmuxPicker = true) }
                 attachTmux(_uiState.value.activeSessionName)
             }.onFailure { error ->
+                TerminalSessionService.stop(context)
                 _uiState.update { it.copy(connectionStatus = ConnectionStatus.Error(error.message ?: "Connection failed")) }
             }
         }
     }
 
     fun disconnect() {
+        TerminalSessionService.stop(context)
         detachTmux()
         activeSshSession?.close()
         activeSshSession = null

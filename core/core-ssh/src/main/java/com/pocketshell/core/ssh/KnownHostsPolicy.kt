@@ -25,4 +25,9 @@ public sealed interface KnownHostsPolicy {
      * fail; this is the safe default for production code.
      */
     public data class KnownHostsFile(public val file: File) : KnownHostsPolicy
+
+    /**
+     * Verify using a custom sshj [HostKeyVerifier], such as a TOFU (Trust-On-First-Use) verifier.
+     */
+    public data class Custom(public val verifier: net.schmizz.sshj.transport.verification.HostKeyVerifier) : KnownHostsPolicy
 }

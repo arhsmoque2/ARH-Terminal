@@ -337,6 +337,8 @@ public object SshConnection {
                 client.addHostKeyVerifier(PromiscuousVerifier())
             is KnownHostsPolicy.KnownHostsFile ->
                 client.loadKnownHosts(policy.file)
+            is KnownHostsPolicy.Custom ->
+                client.addHostKeyVerifier(policy.verifier)
         }
     }
 

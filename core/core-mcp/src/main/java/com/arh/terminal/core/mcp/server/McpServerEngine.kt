@@ -38,13 +38,14 @@ class McpServerEngine(
     private val _stats = MutableStateFlow(McpServerStats())
     val stats: StateFlow<McpServerStats> = _stats.asStateFlow()
 
-    fun start(port: Int = 8070, token: String = UUID.randomUUID().toString()) {
+    fun start(port: Int = 8070, token: String = UUID.randomUUID().toString(), bindAddress: String = "127.0.0.1") {
         if (_stats.value.isRunning) return
         _stats.update { it.copy(port = port, bearerToken = token) }
 
         serverJob = scope.launch {
             try {
-                val ss = ServerSocket(port)
+                val addr = java.net.InetAddress.getByName(bindAddress)
+                val ss = ServerSocket(port, 50, addr)
                 serverSocket = ss
                 _stats.update { it.copy(isRunning = true) }
 
@@ -96,9 +97,13 @@ class McpServerEngine(
                 headerLine = reader.readLine()
             }
 
-            // Verify Bearer Token
+            // Verify Bearer Token using constant-time comparison
             val expectedAuth = "Bearer ${_stats.value.bearerToken}"
-            if (authHeader != expectedAuth) {
+            val authValid = authHeader != null && java.security.MessageDigest.isEqual(
+                authHeader.toByteArray(Charsets.UTF_8),
+                expectedAuth.toByteArray(Charsets.UTF_8)
+            )
+            if (!authValid) {
                 sendResponse(out, 401, "{\"error\": \"Unauthorized: Invalid Bearer Token\"}")
                 return
             }
