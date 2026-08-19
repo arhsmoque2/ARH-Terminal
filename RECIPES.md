@@ -67,3 +67,14 @@ req_tap = urllib.request.Request(
 resp_tap = urllib.request.urlopen(req_tap)
 print(json.loads(resp_tap.read()))
 ```
+
+### 5. Build & Sideload Signed Release APK (Taildrop)
+```powershell
+Set-Location 'D:\_ARH-AGENT-OS\_AGENT-WORKSPACE\projects\ARH-Terminal'
+.\gradlew :app:assembleRelease
+# Output binary: app/build/outputs/apk/release/app-release.apk
+
+# Sideload directly to Android phone via Taildrop
+tailscale file cp app/build/outputs/apk/release/app-release.apk arh-f7:
+```
+

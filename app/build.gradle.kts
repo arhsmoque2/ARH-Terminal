@@ -21,9 +21,22 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file("${rootDir}/arh-release.jks")
+            storePassword = System.getenv("KEYSTORE_PASSWORD") ?: "arhterminal2026"
+            keyAlias = "arh-terminal"
+            keyPassword = System.getenv("KEY_PASSWORD") ?: "arhterminal2026"
+            enableV1Signing = true
+            enableV2Signing = true
+            enableV3Signing = true
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
