@@ -1,0 +1,10 @@
+# Known, already-fixed-forward findings — see GOTCHAS.md #8 for the full story.
+# One fingerprint per line, exactly as printed by `gitleaks detect` (commit:file:rule:line).
+# Scoped per-finding, not per-file or per-rule: everything else, including future edits
+# to the files below, is still scanned normally.
+
+# RECIPES.md's on-device MCP server example carried a live-looking bearer token in
+# commit 626c6405 (2026-08-18). Current main already redacted it to a placeholder;
+# the token is dynamically regenerated per McpServerEngine session (see asbuilt.md),
+# so the historical value has no standing validity.
+626c64052f1ac1204ed8e3783505ef0a9247c2eb:RECIPES.md:generic-api-key:28
