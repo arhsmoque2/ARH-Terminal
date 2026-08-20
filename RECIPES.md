@@ -78,3 +78,12 @@ Set-Location 'D:\_ARH-AGENT-OS\_AGENT-WORKSPACE\projects\ARH-Terminal'
 tailscale file cp app/build/outputs/apk/release/app-release.apk arh-f7:
 ```
 
+### 6. Remote CI Build & Auto-Download via Cloud Agent
+```bash
+# Trigger remote GitHub Actions build, stream logs, download APKs, and verify signatures:
+python scripts/remote_apk_builder.py --type release --verify --output-dir ./build-outputs
+
+# Or quickly download and verify the latest prebuilt green release APK:
+python scripts/remote_apk_builder.py --from-latest --type release --verify --output-dir ./build-outputs
+```
+
