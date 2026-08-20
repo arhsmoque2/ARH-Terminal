@@ -87,3 +87,15 @@ python scripts/remote_apk_builder.py --type release --verify --output-dir ./buil
 python scripts/remote_apk_builder.py --from-latest --type release --verify --output-dir ./build-outputs
 ```
 
+### 7. Run Maestro Live UI & Visual Clash Testing
+```bash
+# 1. Run static Maestro testTag conformance doctor (validates YAML against Compose code)
+python scripts/ci_maestro_doctor.py
+
+# 2. Run all Maestro UI flows locally against connected ADB device or emulator
+maestro test .maestro/
+
+# 3. Run individual flow (e.g. 200% font scale & overflow audit)
+maestro test .maestro/04_font_scale_and_overflow_audit.yaml
+```
+

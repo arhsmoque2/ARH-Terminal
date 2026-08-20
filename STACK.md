@@ -24,5 +24,7 @@
 ## 3. Quality & Testing Harness
 * **Static Analysis**: Detekt `1.23.8` with Compose Rules `0.5.7`
 * **Unit Testing**: JUnit 4, MockK `1.14.11`, Kotlinx Coroutines Test
+* **Live UI & Blackbox Flow Gate**: Maestro Mobile CLI `1.39+` (Auto-waiting, layout clashing & 200% font scale audits)
+* **Headless Emulator Infrastructure**: AOSP Automated Test Device (`aosp_atd` API 34, 50% less RAM, <15s boot time)
 * **Code Formatting**: Spotless `7.0.2`
-* **CI/CD Pipeline**: GitHub Actions Multi-Tier Automated Runner (Lint $\rightarrow$ Unit Tests $\rightarrow$ APK Build)
+* **CI/CD Pipeline**: GitHub Actions Multi-Tier Automated Runner (Lint $\rightarrow$ Unit Tests $\rightarrow$ Maestro E2E $\rightarrow$ APK Build)

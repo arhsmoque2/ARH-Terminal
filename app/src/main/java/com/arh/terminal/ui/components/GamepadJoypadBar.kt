@@ -23,6 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -39,7 +40,9 @@ fun GamepadJoypadBar(
     modifier: Modifier = Modifier
 ) {
     Surface(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .testTag("gamepad_joypad_bar"),
         color = Color(0xFF16161E),
         tonalElevation = 6.dp,
         shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
@@ -100,12 +103,14 @@ private fun DPadButton(
     label: String,
     onClick: () -> Unit
 ) {
+    val tag = "dpad_${label.lowercase()}"
     Box(
         modifier = Modifier
             .size(36.dp)
             .clip(CircleShape)
             .background(Color(0xFF22222E))
-            .clickable { onClick() },
+            .clickable { onClick() }
+            .testTag(tag),
         contentAlignment = Alignment.Center
     ) {
         Icon(
@@ -123,11 +128,13 @@ private fun JoyActionButton(
     color: Color,
     onClick: () -> Unit
 ) {
+    val sanitizedTag = "joy_btn_${label.lowercase().replace("^", "ctrl_")}"
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(8.dp))
             .background(Color(0xFF22222E))
             .clickable { onClick() }
+            .testTag(sanitizedTag)
             .padding(horizontal = 10.dp, vertical = 8.dp),
         contentAlignment = Alignment.Center
     ) {
