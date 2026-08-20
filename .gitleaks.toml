@@ -1,0 +1,25 @@
+title = "ARH-Terminal gitleaks config"
+
+# Extend (not replace) gitleaks' built-in ruleset. A bare custom config with no
+# [extend] would silently drop every default detection rule and only run what's
+# defined below — the opposite of what an allowlist is for.
+[extend]
+useDefault = true
+
+[allowlist]
+description = """
+Known, already-fixed-forward findings that only surface on a full-history scan
+(gitleaks-action scans the incremental diff on push/PR events, but falls back to
+scanning all history on manual workflow_dispatch runs and local `gitleaks detect --all`).
+Each entry here is a specific commit:file:rule:line fingerprint, not a blanket rule
+or path exemption — new secrets are still caught everywhere, including in these files.
+"""
+fingerprints = [
+  # RECIPES.md's on-device MCP server example carried a live-looking bearer token in
+  # commit 626c6405 (2026-08-18). Current main already redacted it to a placeholder;
+  # the token is dynamically regenerated per McpServerEngine session (see asbuilt.md),
+  # so the historical value has no standing validity. Rewriting git history to purge
+  # it would break every existing clone/fork for one already-dead credential — not
+  # worth it. Revisit only if this pattern (real secrets landing in docs) recurs.
+  "626c64052f1ac1204ed8e3783505ef0a9247c2eb:RECIPES.md:generic-api-key:28",
+]
