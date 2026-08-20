@@ -40,3 +40,9 @@
 * **Root Cause**: `ci_apk_signing_doctor.py`'s `--max-size-mb` defaults to `8.0`, sized for the shipped **release** artifact. The debug variant is unminified, carries debug symbols, and pulls in `debugImplementation(libs.androidx.compose.ui.tooling)`, so it's routinely 3-4x larger — that's expected, not a regression.
 * **Permanent Fix**: The `Run APK Signing & Alignment Doctor (Debug)` CI step passes `--max-size-mb 35` for the debug APK; the release step keeps the tight default `8.0` MB budget, since that's the artifact users actually install.
 * **Verification**: `./gradlew :app:assembleDebug` output passes the doctor with the debug-scoped budget; the release budget is unchanged.
+
+### 8. Maestro Blackbox Tests vs Compose Dynamic Node Matching
+* **Symptom**: Maestro fails to find buttons or elements when using localized text or dynamic state labels across orientation/font scale changes.
+* **Root Cause**: Relying solely on text matching (`assertVisible: "Connect"`) can fail when text wraps, abbreviates, or changes based on connection state.
+* **Permanent Fix**: Apply explicit `Modifier.testTag(...)` to all interactive surfaces, inputs, and modals (`app_title`, `input_host`, `btn_connect`, `modal_workflow_macros`). Validate tag availability using `python scripts/ci_maestro_doctor.py`.
+* **Verification**: `python scripts/ci_maestro_doctor.py` confirms 100% testTag resolution across all 4 `.maestro/` flows.

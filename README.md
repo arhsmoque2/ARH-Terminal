@@ -61,12 +61,13 @@
 | **Auto-Tmux Session Picker** | `:app` (`TmuxSessionPickerModal`)| 🟢 Verified | 1-Tap discovery and attach bottom sheet |
 | **URUS Fleet & Macros** | `:app` (`WorkflowMacrosModal`)| 🟢 Verified | 1-Tap psmux-agent-fleet launcher preset |
 | **Share Target** | `:app` (`MainActivity`) | 🟢 Verified | Android `ACTION_SEND` Intent Filter & Trampoline |
+| **Maestro Live UI & Visual Gate** | `.maestro/` (`E2E flows`) | 🟢 Verified | 4 Automated Flows (`ci_maestro_doctor.py` + ATD Headless) |
 
 ---
 
 ## 🛠️ Conformance & Quality Harness
 
-Every build must pass the three-layer quality and spec gate:
+Every build must pass the multi-tier quality and spec gate:
 ```powershell
 # 1. Detekt Static Analysis
 ./gradlew detekt
@@ -76,4 +77,7 @@ Every build must pass the three-layer quality and spec gate:
 
 # 3. As-Built vs Spec Manifest Conformance Doctor
 python scripts/ci_asbuilt_doctor.py
+
+# 4. Maestro Live UI & Visual Clash Conformance Doctor
+python scripts/ci_maestro_doctor.py
 ```

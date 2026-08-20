@@ -1,0 +1,27 @@
+appId: com.arh.terminal
+tags:
+  - overflow
+  - typography
+---
+- launchApp:
+    clearState: false
+
+# 1. Simulate 200% Accessibility Font Scaling
+- setFontScale: 2.0
+
+# 2. Assert Layout Does Not Break or Clip Key Labels
+- assertVisible:
+    id: "app_title"
+- assertVisible: "Connect (psmux -CC)"
+- assertVisible: "Android MCP Agent Bridge"
+
+# 3. Test Landscape Density & Screen Real Estate
+- setOrientation: LANDSCAPE
+- assertVisible:
+    id: "input_host"
+- assertVisible:
+    id: "btn_connect"
+
+# 4. Restore Standard Dimensions
+- setOrientation: PORTRAIT
+- setFontScale: 1.0

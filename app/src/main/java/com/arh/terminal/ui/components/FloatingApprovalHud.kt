@@ -30,6 +30,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -52,7 +53,8 @@ fun FloatingApprovalHud(
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(8.dp),
+                    .padding(8.dp)
+                    .testTag("hud_approval_card"),
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1B18)),
                 elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
@@ -108,7 +110,8 @@ fun FloatingApprovalHud(
                             onClick = { onApprove(false) },
                             modifier = Modifier
                                 .weight(1f)
-                                .height(44.dp),
+                                .height(44.dp)
+                                .testTag("btn_hud_reject"),
                             shape = RoundedCornerShape(10.dp),
                             colors = ButtonDefaults.outlinedButtonColors(
                                 containerColor = Color(0x22EF4444),
@@ -124,7 +127,8 @@ fun FloatingApprovalHud(
                             onClick = { onApprove(true) },
                             modifier = Modifier
                                 .weight(1f)
-                                .height(44.dp),
+                                .height(44.dp)
+                                .testTag("btn_hud_approve"),
                             shape = RoundedCornerShape(10.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = Color(0xFF10B981),

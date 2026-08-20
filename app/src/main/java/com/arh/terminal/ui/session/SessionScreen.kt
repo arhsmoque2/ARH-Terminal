@@ -59,6 +59,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
@@ -107,7 +108,8 @@ fun SessionScreen(
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = "ARH Terminal",
-                    style = MaterialTheme.typography.titleLarge
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.testTag("app_title")
                 )
             }
 
@@ -116,6 +118,7 @@ fun SessionScreen(
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
+                        .testTag("network_status_badge")
                         .background(Color(0xFF1E293B), RoundedCornerShape(12.dp))
                         .padding(horizontal = 8.dp, vertical = 4.dp)
                 ) {
@@ -133,7 +136,10 @@ fun SessionScreen(
                     )
                 }
 
-                IconButton(onClick = { viewModel.toggleMacrosModal(!state.showMacrosModal) }) {
+                IconButton(
+                    onClick = { viewModel.toggleMacrosModal(!state.showMacrosModal) },
+                    modifier = Modifier.testTag("btn_workflow_macros")
+                ) {
                         Icon(
                             imageVector = Icons.Default.Bolt,
                             contentDescription = "Workflow Macros",
@@ -142,7 +148,10 @@ fun SessionScreen(
                     }
                     if (state.connectionStatus is ConnectionStatus.Connected) {
                     Spacer(modifier = Modifier.width(8.dp))
-                    IconButton(onClick = { viewModel.disconnect() }) {
+                    IconButton(
+                        onClick = { viewModel.disconnect() },
+                        modifier = Modifier.testTag("btn_disconnect")
+                    ) {
                         Icon(
                             imageVector = Icons.Default.PowerSettingsNew,
                             contentDescription = "Disconnect",
@@ -268,21 +277,27 @@ private fun ConnectionSetupCard(
                 value = state.host,
                 onValueChange = onHostChange,
                 label = { Text("Host / IP") },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("input_host")
             )
 
             OutlinedTextField(
                 value = state.username,
                 onValueChange = onUserChange,
                 label = { Text("Username") },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("input_username")
             )
 
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
                 label = { Text("Private Key PEM / Passphrase") },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("input_password")
             )
 
             Row(
@@ -291,7 +306,9 @@ private fun ConnectionSetupCard(
             ) {
                 Button(
                     onClick = { onConnect(password) },
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("btn_connect"),
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) {
                     Icon(Icons.Default.PlayArrow, contentDescription = "Connect")
@@ -300,7 +317,8 @@ private fun ConnectionSetupCard(
                 }
 
                 OutlinedButton(
-                    onClick = { showSaveProfile = !showSaveProfile }
+                    onClick = { showSaveProfile = !showSaveProfile },
+                    modifier = Modifier.testTag("btn_save_profile_toggle")
                 ) {
                     Icon(Icons.Default.Bookmark, contentDescription = "Save Profile")
                 }
@@ -381,6 +399,7 @@ private fun McpMiniTile(
             Switch(
                 checked = stats.isRunning,
                 onCheckedChange = { onToggle(it, 8070, stats.bearerToken) },
+                modifier = Modifier.testTag("switch_mcp_daemon"),
                 colors = SwitchDefaults.colors(
                     checkedThumbColor = Color(0xFF10B981),
                     checkedTrackColor = Color(0xFF065F46)
