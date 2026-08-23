@@ -15,7 +15,7 @@ tags:
 - assertVisible: "Android MCP Agent Bridge"
 
 # 3. Test Landscape Density & Screen Real Estate
-- setOrientation: LANDSCAPE
+- setOrientation: LANDSCAPE_LEFT
 - assertVisible:
     id: "input_host"
 - assertVisible:
