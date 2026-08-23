@@ -60,7 +60,9 @@ jobs:
 
       - name: Install Maestro CLI
         run: |
-          curl -FsSL "https://get.maestro.mobile.dev" | bash
+          curl -fsSL "https://get.maestro.mobile.dev" | bash
+          test -x "$HOME/.maestro/bin/maestro"
+          "$HOME/.maestro/bin/maestro" --version
           echo "$HOME/.maestro/bin" >> $GITHUB_PATH
 
       - name: Assemble Debug APK
