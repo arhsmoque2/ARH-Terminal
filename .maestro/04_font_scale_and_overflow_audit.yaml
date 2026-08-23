@@ -6,8 +6,7 @@ tags:
 - launchApp:
     clearState: false
 
-# 1. Simulate 200% Accessibility Font Scaling
-- setFontScale: 2.0
+# 1. Font scale is set to 200% by the CI emulator script.
 
 # 2. Assert Layout Does Not Break or Clip Key Labels
 - assertVisible:
@@ -24,4 +23,3 @@ tags:
 
 # 4. Restore Standard Dimensions
 - setOrientation: PORTRAIT
-- setFontScale: 1.0

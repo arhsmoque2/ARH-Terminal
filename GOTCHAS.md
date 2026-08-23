@@ -65,3 +65,9 @@
 * **Root Cause**: The installer used curl's uppercase `-F` form flag (`-FsSL`) instead of lowercase `-f` fail flag, so Maestro was never installed.
 * **Permanent Fix**: Use `curl -fsSL`, then verify the installed executable and print its version before adding its directory to `GITHUB_PATH`.
 * **Verification**: The workflow must pass the explicit executable/version check before reaching the emulator test step.
+
+### 12. Maestro Does Not Provide a `setFontScale` Flow Command
+* **Symptom**: Maestro rejects a flow with `Invalid Command: setFontScale` before running assertions.
+* **Root Cause**: Font scale is an Android system setting, not a supported Maestro flow command.
+* **Permanent Fix**: Set `system/font_scale` in the emulator runner script and restore `1.0` with an EXIT trap; keep the flow focused on layout assertions.
+* **Verification**: The flow parses under the installed Maestro CLI and the emulator script applies 2.0 before tests, restoring 1.0 on exit.
