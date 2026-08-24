@@ -64,14 +64,42 @@ Legend: ✅ Done & shipped · 🟡 Partially covered · ⬜ Gap (planned, not bu
 | 5.4 | Device logs / notification list tools return real data (not stubs) | ⬜ | Known stub, tracked in `gaps-to-revisit.md` #5 — irrelevant to the terminal use case, matters only for remote device control |
 | 5.5 | Signed release APK build gate | ✅ | Gate exists (`build.gradle.kts` fails fast without `KEYSTORE_PASSWORD`/`KEY_PASSWORD`); actually cutting a signed release is a deploy-time action, not a code gap |
 
+## 6. File transfer & session export
+
+| # | Scenario | Status | Notes |
+|---|---|---|---|
+| 6.1 | Browse the remote host's filesystem over SFTP | 🟡 | Backend only — `RemoteEntry`/`SshSession.listDirectory` in `:core:core-ssh` (built for "issue #528 SFTP file explorer"); **no `FilesScreen`/browser UI exists in `:app` yet** |
+| 6.2 | Upload a file from Android to the remote host, resumable across drops | 🟡 | Backend only — `ResumableUpload.kt`'s `QueueSidecarResumableUploader` (durable checkpoint + resume-from-offset + atomic remote `mv`) already exists in `:core:core-ssh`; **no picker/queue UI wired to it** |
+| 6.3 | "Taildrop"-style 1-tap send straight to the PC | ⬜ | Real Tailscale Taildrop is Tailscale's own P2P protocol driven through their local daemon API (`tailscale file cp` / the Tailscale app's share target) — ARH-Terminal can't drive that without embedding Tailscale's own client. The SFTP upload in 6.2, run over the same Tailscale-carried SSH connection the app already uses, gets the same practical outcome ("share → lands in a folder on my PC") without that dependency — recommend building on 6.2 rather than chasing literal Taildrop |
+| 6.4 | Export a chat/session transcript to a Markdown file (oxproxion pattern) | ⬜ | Not built — no export code exists; would walk `List<AgentTurn>` into Markdown (user/assistant turns → `**You:**`/`**Agent:**`, tool calls → fenced blocks) and save via `MediaStore`/scoped storage |
+| 6.5 | The app's own export/downloads folder shows up as a source when uploading | ⬜ | Not built — depends on 6.1/6.2 (an upload source picker to exist) and 6.4 (something to have been saved there); once both exist this is a few lines (default the picker's start directory to the export folder) |
+
+## 7. Multi-session & in-app links
+
+| # | Scenario | Status | Notes |
+|---|---|---|---|
+| 7.1 | Attach/detach the active psmux session via a toggle | ✅ | `SessionScreen`'s "Interactive psmux Attach/Detach Slider Card" — a real `Switch` (`Icons.Link`/`LinkOff`) wired to `viewModel.attachTmux()`/`detachTmux()`, already logged to the audit journal |
+| 7.2 | Open several sessions/windows at once, each independently attachable | ⬜ | Gap — `SessionUiState` models exactly one `activeSessionName` + one `isAttached` flag; there's no session-list/tab model behind it. The attach toggle in 7.1 is real but singular — extending it to N parallel windows is a state-model change (`SessionUiState` → a list of per-window states), not just a UI tab bar |
+| 7.3 | URLs in Agent Chat / Terminal Feed render as tappable hyperlinks | ⬜ | Not built — no linkify/URL-pattern code exists anywhere in the app today |
+
 ## Net gaps to close, in priority order
 
 1. **ADR-008 — ANSI-aware Terminal Feed.** The single biggest remaining gap for
    "use this as my daily driver" — colored output and TUI apps don't render.
-2. **`moke`'s hardened `Clipboard.kt` pattern** — cheap to port, closes a real
+2. **Wire up the SFTP explorer + resumable uploader that already exist** (6.1,
+   6.2) — this is mostly UI work on top of a backend that's already been built
+   and tested (`RemoteEntry`, `ResumableUpload.kt`, `UploadAtomicityIntegrationTest`,
+   `ResumableUploadIntegrationTest`); the highest-leverage gap on this list.
+3. **`moke`'s hardened `Clipboard.kt` pattern** — cheap to port, closes a real
    (if narrow) main-thread DoS/leak vector once terminal paste is wired up.
-3. **Lock-screen tool approval** (2.8) — nice-to-have, `vibeterm` has a working
+4. **Lock-screen tool approval** (2.8) — nice-to-have, `vibeterm` has a working
    reference implementation (notification actions + optional biometric gate).
-4. **ADR-006 — OpenRouter/local-LLM chat module** — only if you actually want a
+5. **Session-transcript Markdown export** (6.4) — small, self-contained, no
+   dependency on anything else on this list.
+6. **URL hyperlinking** (7.3) — small, self-contained.
+7. **Multi-session windows** (7.2) — real architecture change (`SessionUiState`
+   → per-window list), biggest single item on this list; worth its own ADR
+   before starting.
+8. **ADR-006 — OpenRouter/local-LLM chat module** — only if you actually want a
    second, agent-independent chat surface in the app; not required for the SSH/
    agent-pairing use case this app is built around.
