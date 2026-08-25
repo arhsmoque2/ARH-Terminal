@@ -81,10 +81,7 @@ jobs:
             trap 'adb shell settings put system font_scale 1.0 >/dev/null 2>&1 || true' EXIT
             adb install -r app/build/outputs/apk/debug/app-debug.apk
             adb shell settings put system font_scale 2.0
-            maestro test .maestro/ || {
-              adb logcat -d -t 500
-              exit 1
-            }
+            maestro test .maestro/ || { adb logcat -d -t 500; exit 1; }
 
       - name: Upload Maestro Test Failure Artifacts
         if: failure()
