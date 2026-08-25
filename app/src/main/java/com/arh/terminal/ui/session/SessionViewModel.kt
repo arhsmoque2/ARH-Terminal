@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.arh.terminal.core.mcp.server.McpServerEngine
 import com.arh.terminal.core.relay.client.RelayStatus
 import com.arh.terminal.core.relay.client.RelayWebSocketClient
+import com.arh.terminal.data.artifacts.AgentArtifact
 import com.arh.terminal.data.audit.AgentAuditJournal
 import com.arh.terminal.data.audit.ConsentTier
 import com.arh.terminal.data.profiles.ConnectionProfile
@@ -37,6 +38,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import org.json.JSONObject
 import java.io.File
 import java.nio.charset.StandardCharsets
 import java.util.UUID
@@ -62,6 +64,13 @@ class SessionViewModel @Inject constructor(
     private val claudeParser = ClaudeCodeParser()
     private var lastUsedKeyPem: String = ""
     private var pendingConsentDeferred: CompletableDeferred<Boolean>? = null
+
+    // Artifact producer for the ArtifactCard/ArtifactPreviewSheet pipeline: a "Write" tool
+    // call (Claude Code's file-write tool) that resolves without error becomes an
+    // AgentArtifact, held here until the next assistant message claims it — mirroring how a
+    // real session reads (agent writes a file via tool call, then continues its reply).
+    private val pendingWriteArtifacts = mutableMapOf<String, AgentArtifact>()
+    private val unclaimedArtifacts = mutableListOf<AgentArtifact>()
 
     val gitHubAuthManager: com.arh.terminal.data.github.GitHubAuthManager = com.arh.terminal.data.github.GitHubAuthManager(context)
     val gitHubClient: com.arh.terminal.data.github.GitHubClient = com.arh.terminal.data.github.GitHubClient(gitHubAuthManager)
@@ -441,17 +450,23 @@ class SessionViewModel @Inject constructor(
                             )
                         )
                     } else {
+                        val artifacts = unclaimedArtifacts.toList()
+                        unclaimedArtifacts.clear()
                         turns.add(
                             AgentTurn.AssistantMessage(
                                 id = e.id,
                                 timestamp = e.atMillis ?: System.currentTimeMillis(),
                                 agent = e.agent,
-                                text = e.text
+                                text = e.text,
+                                artifacts = artifacts
                             )
                         )
                     }
                 }
                 is ConversationEvent.ToolCall -> {
+                    if (e.name == "Write") {
+                        parseWriteArtifact(e.id, e.input)?.let { pendingWriteArtifacts[e.id] = it }
+                    }
                     turns.add(
                         AgentTurn.ToolInvocation(
                             id = e.id,
@@ -466,10 +481,35 @@ class SessionViewModel @Inject constructor(
                     if (last is AgentTurn.ToolInvocation && last.id == e.toolCallId) {
                         turns[turns.lastIndex] = last.copy(output = e.output, isError = e.isError)
                     }
+                    pendingWriteArtifacts.remove(e.toolCallId)?.let { artifact ->
+                        if (!e.isError) unclaimedArtifacts += artifact
+                    }
                 }
                 else -> Unit
             }
         }
         return turns.takeLast(100)
+    }
+
+    /** Parses a Claude Code "Write" tool call's raw JSON input into an [AgentArtifact]. */
+    private fun parseWriteArtifact(callId: String, rawInput: String): AgentArtifact? {
+        val input = runCatching { JSONObject(rawInput) }.getOrNull() ?: return null
+        val filePath = input.optString("file_path").ifBlank { return null }
+        val content = input.optString("content")
+        val fileName = filePath.substringAfterLast('/')
+        return AgentArtifact(
+            id = callId,
+            fileName = fileName,
+            fileType = fileName.substringAfterLast('.', missingDelimiterValue = "txt"),
+            previewContent = content,
+            sourceContent = content,
+            sizeFormatted = formatArtifactSize(content.toByteArray(StandardCharsets.UTF_8).size)
+        )
+    }
+
+    private fun formatArtifactSize(bytes: Int): String = when {
+        bytes < 1024 -> "$bytes B"
+        bytes < 1024 * 1024 -> "%.1f KB".format(bytes / 1024.0)
+        else -> "%.1f MB".format(bytes / (1024.0 * 1024.0))
     }
 }

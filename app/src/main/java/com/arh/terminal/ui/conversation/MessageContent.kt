@@ -85,10 +85,13 @@ fun MessageContentView(
             when (segment) {
                 is MessageSegment.Prose -> {
                     if (segment.text.isNotBlank()) {
-                        val linkedText = LinkifyHelper.createLinkedText(
-                            text = segment.text.trim('\n'),
-                            linkColor = MaterialTheme.colorScheme.primary
-                        )
+                        val linkColor = MaterialTheme.colorScheme.primary
+                        val linkedText = remember(segment.text, linkColor) {
+                            LinkifyHelper.createLinkedText(
+                                text = segment.text.trim('\n'),
+                                linkColor = linkColor
+                            )
+                        }
                         Text(
                             text = linkedText,
                             style = MaterialTheme.typography.bodyMedium,
