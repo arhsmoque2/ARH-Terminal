@@ -12,6 +12,7 @@ import com.arh.terminal.data.profiles.ConnectionProfile
 import com.arh.terminal.data.profiles.ProfileRepository
 import com.arh.terminal.ui.conversation.AgentTurn
 import com.arh.terminal.util.NetworkMonitor
+import com.arh.terminal.util.SecretRedaction
 import com.pocketshell.core.agents.AgentKind
 import com.pocketshell.core.agents.ClaudeCodeParser
 import com.pocketshell.core.agents.ConversationEvent
@@ -69,8 +70,11 @@ class SessionViewModel @Inject constructor(
     // call (Claude Code's file-write tool) that resolves without error becomes an
     // AgentArtifact, held here until the next assistant message claims it — mirroring how a
     // real session reads (agent writes a file via tool call, then continues its reply).
-    private val pendingWriteArtifacts = mutableMapOf<String, AgentArtifact>()
-    private val unclaimedArtifacts = mutableListOf<AgentArtifact>()
+    // Keyed by paneId: multiple panes (e.g. a tmux split) interleave through the same
+    // handleTmuxEvent, so this must not be shared across panes or one pane's artifact can be
+    // claimed by another pane's next assistant message.
+    private val pendingWriteArtifactsByPane = mutableMapOf<String, MutableMap<String, AgentArtifact>>()
+    private val unclaimedArtifactsByPane = mutableMapOf<String, MutableList<AgentArtifact>>()
 
     val gitHubAuthManager: com.arh.terminal.data.github.GitHubAuthManager = com.arh.terminal.data.github.GitHubAuthManager(context)
     val gitHubClient: com.arh.terminal.data.github.GitHubClient = com.arh.terminal.data.github.GitHubClient(gitHubAuthManager)
@@ -362,7 +366,15 @@ class SessionViewModel @Inject constructor(
         val target = _uiState.value.selectedPaneId ?: _uiState.value.panes.firstOrNull()?.paneId ?: return
         if (promptText.isBlank()) return
 
-        auditJournal.recordAction("Agent Prompt", "send_prompt", promptText.take(60), ConsentTier.MUTATIVE)
+        // Redact before truncating: a credential embedded early in the command (e.g. a
+        // private-repo `git clone https://x-access-token:<token>@...`) would otherwise land
+        // in the first 60 chars of the app's own persistent audit journal in plaintext.
+        auditJournal.recordAction(
+            "Agent Prompt",
+            "send_prompt",
+            SecretRedaction.redact(promptText).take(60),
+            ConsentTier.MUTATIVE
+        )
 
         if (_uiState.value.transportMode == TransportMode.RelayWebSocket) {
             relayClient.send(promptText)
@@ -400,7 +412,7 @@ class SessionViewModel @Inject constructor(
                 _uiState.update { state ->
                     val existingPane = state.panes.find { it.paneId == pId }
                     val currentTurns = existingPane?.agentTurns ?: emptyList()
-                    val newTurns = parseOutputTurns(rawText, currentTurns)
+                    val newTurns = parseOutputTurns(pId, rawText, currentTurns)
 
                     val updatedPanes = if (existingPane != null) {
                         state.panes.map { p ->
@@ -434,9 +446,11 @@ class SessionViewModel @Inject constructor(
         }
     }
 
-    private fun parseOutputTurns(chunk: String, currentTurns: List<AgentTurn>): List<AgentTurn> {
+    private fun parseOutputTurns(paneId: String, chunk: String, currentTurns: List<AgentTurn>): List<AgentTurn> {
         val turns = currentTurns.toMutableList()
         val events = claudeParser.parseLine(chunk)
+        val pendingWriteArtifacts = pendingWriteArtifactsByPane.getOrPut(paneId) { mutableMapOf() }
+        val unclaimedArtifacts = unclaimedArtifactsByPane.getOrPut(paneId) { mutableListOf() }
 
         for (e in events) {
             when (e) {

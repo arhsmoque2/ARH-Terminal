@@ -3,6 +3,7 @@ package com.arh.terminal.data.export
 import android.content.Context
 import android.content.Intent
 import com.arh.terminal.ui.conversation.AgentTurn
+import com.arh.terminal.util.SecretRedaction
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -30,7 +31,7 @@ object SessionMarkdownExporter {
                 is AgentTurn.UserMessage -> {
                     appendLine("### Turn ${index + 1} — Operator ($time)")
                     appendLine()
-                    appendLine(turn.text)
+                    appendLine(SecretRedaction.redact(turn.text))
                     appendLine()
                 }
                 is AgentTurn.AssistantMessage -> {
@@ -40,11 +41,11 @@ object SessionMarkdownExporter {
                         appendLine("> [!NOTE]")
                         appendLine("> **Reasoning Trace**:")
                         turn.thinking.lines().forEach { line ->
-                            appendLine("> $line")
+                            appendLine("> ${SecretRedaction.redact(line)}")
                         }
                         appendLine()
                     }
-                    appendLine(turn.text)
+                    appendLine(SecretRedaction.redact(turn.text))
                     appendLine()
                 }
                 is AgentTurn.ToolInvocation -> {
@@ -52,13 +53,13 @@ object SessionMarkdownExporter {
                     appendLine()
                     appendLine("**Arguments:**")
                     appendLine("```json")
-                    appendLine(turn.arguments)
+                    appendLine(SecretRedaction.redact(turn.arguments))
                     appendLine("```")
                     appendLine()
                     if (turn.output != null) {
                         appendLine("**Output:**")
                         appendLine("```")
-                        appendLine(turn.output)
+                        appendLine(SecretRedaction.redact(turn.output))
                         appendLine("```")
                         appendLine()
                     }

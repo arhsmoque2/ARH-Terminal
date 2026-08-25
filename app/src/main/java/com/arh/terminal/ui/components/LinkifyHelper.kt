@@ -1,7 +1,5 @@
 package com.arh.terminal.ui.components
 
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.LinkAnnotation
@@ -37,10 +35,14 @@ object LinkifyHelper {
         return Pair(url, trimmed)
     }
 
-    @Composable
+    // Deliberately not @Composable: this only builds an AnnotatedString from plain data
+    // (no composable calls in the body), so it can be called from inside `remember {}` to
+    // memoize the URL-regex scan across recompositions. `linkColor` has no default — take
+    // it from MaterialTheme.colorScheme at the (composable) call site instead, since a
+    // composition-local default isn't legal on a non-composable function.
     fun createLinkedText(
         text: String,
-        linkColor: Color = MaterialTheme.colorScheme.primary
+        linkColor: Color
     ): AnnotatedString {
         val matcher = URL_PATTERN.matcher(text)
         return buildAnnotatedString {
