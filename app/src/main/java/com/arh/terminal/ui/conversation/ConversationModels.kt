@@ -34,6 +34,7 @@ sealed interface AgentTurn {
         val toolName: String,
         val arguments: String,
         val output: String? = null,
+        val isError: Boolean = false,
         val isPendingApproval: Boolean = false,
         val durationMs: Long? = null
     ) : AgentTurn

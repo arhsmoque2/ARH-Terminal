@@ -464,7 +464,7 @@ class SessionViewModel @Inject constructor(
                 is ConversationEvent.ToolResult -> {
                     val last = turns.lastOrNull()
                     if (last is AgentTurn.ToolInvocation && last.id == e.toolCallId) {
-                        turns[turns.lastIndex] = last.copy(output = e.output)
+                        turns[turns.lastIndex] = last.copy(output = e.output, isError = e.isError)
                     }
                 }
                 else -> Unit

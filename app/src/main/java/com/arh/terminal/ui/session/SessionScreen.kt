@@ -1013,7 +1013,20 @@ private fun SessionModals(
             client = viewModel.gitHubClient,
             onDismiss = { viewModel.toggleRepoPickerModal(false) },
             onSelectRepo = { repo ->
-                viewModel.sendPrompt("git clone ${repo.cloneUrl}")
+                // Public repos clone anonymously over HTTPS; private repos need the device-flow
+                // token embedded in the URL, or the remote host's git has no credentials and the
+                // clone fails (or hangs on an interactive prompt the pane can't answer).
+                val cloneUrl = if (repo.isPrivate) {
+                    val token = viewModel.gitHubAuthManager.getStoredToken()
+                    if (token != null) {
+                        repo.cloneUrl.replaceFirst("https://", "https://x-access-token:$token@")
+                    } else {
+                        repo.cloneUrl
+                    }
+                } else {
+                    repo.cloneUrl
+                }
+                viewModel.sendPrompt("git clone $cloneUrl")
             }
         )
     }

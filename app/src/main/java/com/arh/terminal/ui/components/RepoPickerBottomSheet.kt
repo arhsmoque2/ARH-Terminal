@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.OpenInBrowser
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Refresh
@@ -112,6 +113,17 @@ fun RepoPickerBottomSheet(
         }
     }
 
+    fun signOut() {
+        authManager.logout()
+        isAuthorized = false
+        deviceAuth = null
+        isAuthenticating = false
+        authError = null
+        repos = emptyList()
+        repoError = null
+        searchQuery = ""
+    }
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         containerColor = Color(0xFF16161A),
@@ -163,6 +175,9 @@ fun RepoPickerBottomSheet(
                     if (isAuthorized) {
                         IconButton(onClick = { loadRepos() }) {
                             Icon(Icons.Default.Refresh, contentDescription = "Refresh", tint = Color(0xFF9E9E9E))
+                        }
+                        IconButton(onClick = { signOut() }) {
+                            Icon(Icons.Default.Logout, contentDescription = "Sign out of GitHub", tint = Color(0xFF9E9E9E))
                         }
                     }
                     IconButton(onClick = onDismiss) {
@@ -358,7 +373,24 @@ fun RepoPickerBottomSheet(
                         }
                     } else if (repoError != null) {
                         Box(modifier = Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
-                            Text(text = repoError!!, color = Color(0xFFFF8A80), fontSize = 13.sp)
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(text = repoError!!, color = Color(0xFFFF8A80), fontSize = 13.sp)
+                                Spacer(modifier = Modifier.height(12.dp))
+                                Text(
+                                    text = "If this keeps failing, your GitHub connection may have expired.",
+                                    color = Color(0xFF757575),
+                                    fontSize = 11.sp
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Button(
+                                    onClick = { signOut() },
+                                    shape = RoundedCornerShape(8.dp)
+                                ) {
+                                    Icon(Icons.Default.Logout, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Sign Out & Reconnect")
+                                }
+                            }
                         }
                     } else {
                         val filteredRepos = repos.filter {

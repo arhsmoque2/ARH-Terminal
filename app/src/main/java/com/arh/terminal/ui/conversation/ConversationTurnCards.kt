@@ -224,7 +224,11 @@ private fun ToolInvocationCard(
             toolName = turn.toolName,
             arguments = turn.arguments,
             output = turn.output,
-            status = if (turn.output != null) ToolExecutionStatus.SUCCESS else ToolExecutionStatus.RUNNING,
+            status = when {
+                turn.output == null -> ToolExecutionStatus.RUNNING
+                turn.isError -> ToolExecutionStatus.FAILED
+                else -> ToolExecutionStatus.SUCCESS
+            },
             durationMs = turn.durationMs,
             modifier = modifier
         )
