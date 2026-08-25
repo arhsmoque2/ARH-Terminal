@@ -1,5 +1,6 @@
 package com.arh.terminal.ui.conversation
 
+import com.arh.terminal.ui.components.LinkifyHelper
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
@@ -84,8 +85,15 @@ fun MessageContentView(
             when (segment) {
                 is MessageSegment.Prose -> {
                     if (segment.text.isNotBlank()) {
+                        val linkColor = MaterialTheme.colorScheme.primary
+                        val linkedText = remember(segment.text, linkColor) {
+                            LinkifyHelper.createLinkedText(
+                                text = segment.text.trim('\n'),
+                                linkColor = linkColor
+                            )
+                        }
                         Text(
-                            text = segment.text.trim('\n'),
+                            text = linkedText,
                             style = MaterialTheme.typography.bodyMedium,
                             color = proseColor
                         )
