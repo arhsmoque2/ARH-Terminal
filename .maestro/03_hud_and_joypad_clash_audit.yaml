@@ -7,6 +7,11 @@ tags:
     clearState: false
 
 # 1. Inspect Setup Card Components
+- extendedWaitUntil:
+    visible:
+      id: "btn_connect"
+    timeout: 20000
+
 - assertVisible:
     id: "btn_connect"
 

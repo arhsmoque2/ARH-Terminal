@@ -87,15 +87,45 @@ python scripts/remote_apk_builder.py --type release --verify --output-dir ./buil
 python scripts/remote_apk_builder.py --from-latest --type release --verify --output-dir ./build-outputs
 ```
 
-### 7. Run Maestro Live UI & Visual Clash Testing
-```bash
-# 1. Run static Maestro testTag conformance doctor (validates YAML against Compose code)
+### 7. Run Maestro Live UI & Visual Clash Testing (Local & CI)
+
+#### A. Static Conformance Gate
+```powershell
+# Validates all .maestro/*.yaml flows against testTags in Compose codebase & detects anti-patterns
 python scripts/ci_maestro_doctor.py
-
-# 2. Run all Maestro UI flows locally against connected ADB device or emulator
-maestro test .maestro/
-
-# 3. Run individual flow (e.g. 200% font scale & overflow audit)
-maestro test .maestro/04_font_scale_and_overflow_audit.yaml
 ```
+
+#### B. Local Native Windows Setup & Execution
+1. **Prerequisites**: Ensure Java 17+ and ADB are installed:
+   ```powershell
+   winget install EclipseAdoptium.Temurin.17.JDK
+   adb devices
+   ```
+2. **Install Maestro CLI (Native Windows)**:
+   ```powershell
+   Invoke-WebRequest -Uri "https://github.com/mobile-dev-inc/maestro/releases/latest/download/maestro.zip" -OutFile "$env:TEMP\maestro.zip"
+   Expand-Archive -Path "$env:TEMP\maestro.zip" -DestinationPath "C:\maestro" -Force
+   [Environment]::SetEnvironmentVariable("Path", $env:Path + ";C:\maestro\bin", [EnvironmentVariableTarget]::User)
+   ```
+3. **Build & Install Debug APK to Device**:
+   ```powershell
+   .\gradlew.bat :app:installDebug
+   ```
+4. **Run Automated Test Suite**:
+   ```powershell
+   # Run all flows
+   maestro test .maestro/
+
+   # Run individual flow (e.g. 200% accessibility font scale & overflow audit)
+   maestro test .maestro/04_font_scale_and_overflow_audit.yaml
+   ```
+5. **Launch Maestro Studio (Interactive Web Inspector)**:
+   ```powershell
+   # Launches live UI hierarchy inspector on http://localhost:9999
+   maestro studio
+   ```
+
+#### C. CI Headless ATD Runner Configuration
+* Headless Android Test Development (`aosp_atd` API 34) runs with `-gpu swiftshader_indirect`.
+* All flows include `extendedWaitUntil: { timeout: 30000 }` on cold launch to accommodate CPU software rasterization on virtualized runners before assertions fire.
 

@@ -6,9 +6,15 @@ tags:
 - launchApp:
     clearState: false
 
-# 1. Font scale is set to 200% by the CI emulator script.
+# 1. Simulate 200% Accessibility Font Scaling
+- setFontScale: 2.0
 
 # 2. Assert Layout Does Not Break or Clip Key Labels
+- extendedWaitUntil:
+    visible:
+      id: "app_title"
+    timeout: 20000
+
 - assertVisible:
     id: "app_title"
 - assertVisible: "Connect (psmux -CC)"

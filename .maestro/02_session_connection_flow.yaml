@@ -7,6 +7,11 @@ tags:
     clearState: false
 
 # 1. Fill Host & Username
+- extendedWaitUntil:
+    visible:
+      id: "input_host"
+    timeout: 20000
+
 - tapOn:
     id: "input_host"
 - inputText: "100.85.170.170"

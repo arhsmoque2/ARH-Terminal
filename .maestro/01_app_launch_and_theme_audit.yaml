@@ -6,7 +6,12 @@ tags:
 - launchApp:
     clearState: true
 
-# 1. Cold Launch & Header Inspection
+# 1. Cold Launch & Header Inspection (Wait for Jetpack Compose first frame)
+- extendedWaitUntil:
+    visible:
+      id: "app_title"
+    timeout: 30000
+
 - assertVisible:
     id: "app_title"
 - assertVisible: "ARH Terminal"
