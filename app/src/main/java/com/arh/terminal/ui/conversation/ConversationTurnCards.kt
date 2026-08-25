@@ -183,10 +183,9 @@ private fun AssistantMessageCard(
                 }
 
                 Spacer(modifier = Modifier.height(6.dp))
-                Text(
+                MessageContentView(
                     text = turn.text,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface
+                    proseColor = MaterialTheme.colorScheme.onSurface
                 )
             }
         }
@@ -239,13 +238,17 @@ private fun ToolInvocationCard(
             }
 
             Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = turn.arguments,
-                style = MaterialTheme.typography.bodySmall,
-                fontFamily = FontFamily.Monospace,
-                color = Color(0xFFE0E0E0),
-                maxLines = if (expanded) Int.MAX_VALUE else 2
-            )
+            if (expanded) {
+                CodeBlock(code = turn.arguments, language = "args")
+            } else {
+                Text(
+                    text = turn.arguments,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontFamily = FontFamily.Monospace,
+                    color = Color(0xFFE0E0E0),
+                    maxLines = 2
+                )
+            }
 
             AnimatedVisibility(visible = expanded && !turn.output.isNullOrBlank()) {
                 Column(modifier = Modifier.padding(top = 8.dp)) {
@@ -254,12 +257,8 @@ private fun ToolInvocationCard(
                         style = MaterialTheme.typography.labelSmall,
                         color = Color.Gray
                     )
-                    Text(
-                        text = turn.output ?: "",
-                        style = MaterialTheme.typography.bodySmall,
-                        fontFamily = FontFamily.Monospace,
-                        color = Color(0xFFA7FFEB)
-                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    CodeBlock(code = turn.output ?: "", language = "output")
                 }
             }
 

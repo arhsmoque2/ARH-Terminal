@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -75,9 +76,15 @@ import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.ContentPaste
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import com.arh.terminal.ui.components.QuickActionBar
 import com.arh.terminal.ui.conversation.AgentTurnCard
 import com.arh.terminal.util.NetworkType
+import kotlinx.coroutines.delay
 
 @Composable
 fun SessionScreen(
@@ -620,23 +627,65 @@ private fun ConnectedSessionView(
                     }
                 }
             } else {
+                val outputHistory = activePane?.outputHistory ?: emptyList()
+                val clipboard = LocalClipboardManager.current
+                var justCopiedAll by remember { mutableStateOf(false) }
+                LaunchedEffect(justCopiedAll) {
+                    if (justCopiedAll) {
+                        delay(1500)
+                        justCopiedAll = false
+                    }
+                }
+
                 Card(
                     modifier = Modifier.fillMaxSize(),
                     colors = CardDefaults.cardColors(containerColor = Color(0xFF0F0F0F)),
                     shape = RoundedCornerShape(8.dp)
                 ) {
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(8.dp)
-                    ) {
-                        items(activePane?.outputHistory ?: emptyList()) { chunk ->
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 8.dp),
+                            horizontalArrangement = Arrangement.End,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             Text(
-                                text = chunk,
-                                color = Color(0xFF80D8FF),
-                                fontSize = 12.sp,
-                                fontFamily = FontFamily.Monospace
+                                text = if (justCopiedAll) "Copied" else "Copy all",
+                                fontSize = 11.sp,
+                                color = if (justCopiedAll) Color(0xFF69F0AE) else Color(0xFF9E9E9E)
                             )
+                            IconButton(
+                                onClick = {
+                                    clipboard.setText(AnnotatedString(outputHistory.joinToString("\n")))
+                                    justCopiedAll = true
+                                },
+                                enabled = outputHistory.isNotEmpty()
+                            ) {
+                                Icon(
+                                    imageVector = if (justCopiedAll) Icons.Default.Check else Icons.Default.ContentCopy,
+                                    contentDescription = "Copy terminal feed",
+                                    tint = if (justCopiedAll) Color(0xFF69F0AE) else Color(0xFF9E9E9E)
+                                )
+                            }
+                        }
+                        // Selectable like a real terminal (long-press to select, drag handles to
+                        // extend) in addition to the 1-tap "Copy all" above.
+                        SelectionContainer(modifier = Modifier.fillMaxSize()) {
+                            LazyColumn(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(horizontal = 8.dp)
+                            ) {
+                                items(outputHistory) { chunk ->
+                                    Text(
+                                        text = chunk,
+                                        color = Color(0xFF80D8FF),
+                                        fontSize = 12.sp,
+                                        fontFamily = FontFamily.Monospace
+                                    )
+                                }
+                            }
                         }
                     }
                 }
