@@ -6,8 +6,9 @@ tags:
 - launchApp:
     clearState: false
 
-# 1. Simulate 200% Accessibility Font Scaling
-- setFontScale: 2.0
+# 1. Accessibility font scaling (200%) is set by the CI script via
+#    `adb shell settings put system font_scale 2.0` before this flow runs —
+#    Maestro has no native setFontScale command.
 
 # 2. Assert Layout Does Not Break or Clip Key Labels
 - extendedWaitUntil:

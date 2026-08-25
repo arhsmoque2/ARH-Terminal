@@ -82,7 +82,10 @@ jobs:
             adb install -r app/build/outputs/apk/debug/app-debug.apk
             adb shell am start -n com.arh.terminal/.MainActivity
             sleep 5
-            maestro test .maestro/ || { adb logcat -d -t 500; exit 1; }
+            maestro test .maestro/01_app_launch_and_theme_audit.yaml .maestro/02_session_connection_flow.yaml .maestro/03_hud_and_joypad_clash_audit.yaml || { adb logcat -d -t 500; exit 1; }
+            adb shell settings put system font_scale 2.0
+            maestro test .maestro/04_font_scale_and_overflow_audit.yaml || { adb shell settings put system font_scale 1.0; adb logcat -d -t 500; exit 1; }
+            adb shell settings put system font_scale 1.0
 
       - name: Upload Maestro Test Failure Artifacts
         if: failure()
