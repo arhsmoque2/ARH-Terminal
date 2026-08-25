@@ -37,8 +37,37 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  quality-gate-and-test:
-    name: Detekt, Unit Tests & As-Built Doctor
+  detekt-lint:
+    name: Detekt Static Analysis
+    needs: secret-scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Run Detekt Static Analysis
+        run: ./gradlew detekt --no-daemon --stacktrace
+
+      - name: Upload Detekt Reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: detekt-reports
+          path: '**/build/reports/detekt/'
+
+  unit-tests-and-doctor:
+    name: Unit Tests & As-Built Doctor
     needs: secret-scan
     runs-on: ubuntu-latest
     timeout-minutes: 10 # Strict ceiling to prevent hangs
@@ -61,9 +90,6 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Run Detekt Static Analysis
-        run: ./gradlew detekt --no-daemon --stacktrace
-
       - name: Run Unit Tests with Timeout Ceiling
         run: ./gradlew :core:core-ssh:test :core:core-tmux:test :core:core-agents:test :core:core-mcp:test :core:core-relay:test :app:test --no-daemon --stacktrace
 
@@ -79,7 +105,8 @@ jobs:
 
   build-apk:
     name: Assemble Debug APK & Verify Signing
-    needs: quality-gate-and-test
+    needs: [detekt-lint, unit-tests-and-doctor]
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -119,7 +146,7 @@ jobs:
 
   build-release-apk:
     name: Assemble Signed Release APK & Gate
-    needs: quality-gate-and-test
+    needs: [detekt-lint, unit-tests-and-doctor]
     if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 10

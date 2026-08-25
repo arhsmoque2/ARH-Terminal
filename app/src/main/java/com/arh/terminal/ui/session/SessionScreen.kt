@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -76,9 +77,24 @@ import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.ContentPaste
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import com.arh.terminal.ui.components.QuickActionBar
+import com.arh.terminal.ui.components.ArtifactPreviewSheet
+import com.arh.terminal.ui.components.RepoPickerBottomSheet
+import com.arh.terminal.ui.workspace.WorkspaceTransferModal
+import com.arh.terminal.data.export.SessionMarkdownExporter
 import com.arh.terminal.ui.conversation.AgentTurnCard
 import com.arh.terminal.util.NetworkType
+import androidx.compose.material.icons.filled.DriveFolderUpload
+import androidx.compose.material.icons.filled.Public
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.ui.platform.LocalContext
+import android.widget.Toast
+import kotlinx.coroutines.delay
 
 @Composable
 fun SessionScreen(
@@ -140,14 +156,49 @@ fun SessionScreen(
                     onClick = { viewModel.toggleMacrosModal(!state.showMacrosModal) },
                     modifier = Modifier.testTag("btn_workflow_macros")
                 ) {
+                    Icon(
+                        imageVector = Icons.Default.Bolt,
+                        contentDescription = "Workflow Macros",
+                        tint = Color(0xFFFBBF24)
+                    )
+                }
+
+                IconButton(onClick = { viewModel.toggleRepoPickerModal(true) }) {
+                    Icon(
+                        imageVector = Icons.Default.Public,
+                        contentDescription = "GitHub Repositories",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                if (state.connectionStatus is ConnectionStatus.Connected) {
+                    IconButton(onClick = { viewModel.toggleTransferModal(true) }) {
                         Icon(
-                            imageVector = Icons.Default.Bolt,
-                            contentDescription = "Workflow Macros",
-                            tint = Color(0xFFFBBF24)
+                            imageVector = Icons.Default.DriveFolderUpload,
+                            contentDescription = "Transfer Files",
+                            tint = Color(0xFF38BDF8)
                         )
                     }
-                    if (state.connectionStatus is ConnectionStatus.Connected) {
-                    Spacer(modifier = Modifier.width(8.dp))
+
+                    val context = LocalContext.current
+                    IconButton(onClick = {
+                        val activePane = state.panes.find { it.paneId == state.selectedPaneId } ?: state.panes.firstOrNull()
+                        val currentTurns = activePane?.agentTurns ?: emptyList()
+                        SessionMarkdownExporter.shareSession(
+                            context = context,
+                            sessionName = state.activeSessionName,
+                            host = "${state.username}@${state.host}",
+                            turns = currentTurns
+                        )
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.Share,
+                            contentDescription = "Export Session",
+                            tint = Color(0xFFA78BFA)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(4.dp))
                     IconButton(
                         onClick = { viewModel.disconnect() },
                         modifier = Modifier.testTag("btn_disconnect")
@@ -634,63 +685,85 @@ private fun ConnectedSessionView(
                         }
                     } else {
                         items(activePane.agentTurns) { turn ->
-                            AgentTurnCard(turn = turn, onApproveTool = { _, approve -> onApprove(approve) })
+                            AgentTurnCard(
+                                turn = turn,
+                                onApproveTool = { _, approve -> onApprove(approve) },
+                                onSelectArtifact = { viewModel.selectArtifact(it) }
+                            )
                         }
                     }
                 }
             } else {
+                val outputHistory = activePane?.outputHistory ?: emptyList()
+                val clipboard = LocalClipboardManager.current
+                var justCopiedAll by remember { mutableStateOf(false) }
+                LaunchedEffect(justCopiedAll) {
+                    if (justCopiedAll) {
+                        delay(1500)
+                        justCopiedAll = false
+                    }
+                }
+
                 Card(
                     modifier = Modifier.fillMaxSize(),
                     colors = CardDefaults.cardColors(containerColor = Color(0xFF0F0F0F)),
                     shape = RoundedCornerShape(8.dp)
                 ) {
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(8.dp)
-                    ) {
-                        items(activePane?.outputHistory ?: emptyList()) { chunk ->
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 8.dp),
+                            horizontalArrangement = Arrangement.End,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             Text(
-                                text = chunk,
-                                color = Color(0xFF80D8FF),
-                                fontSize = 12.sp,
-                                fontFamily = FontFamily.Monospace
+                                text = if (justCopiedAll) "Copied" else "Copy all",
+                                fontSize = 11.sp,
+                                color = if (justCopiedAll) Color(0xFF69F0AE) else Color(0xFF9E9E9E)
                             )
+                            IconButton(
+                                onClick = {
+                                    clipboard.setText(AnnotatedString(outputHistory.joinToString("\n")))
+                                    justCopiedAll = true
+                                },
+                                enabled = outputHistory.isNotEmpty()
+                            ) {
+                                Icon(
+                                    imageVector = if (justCopiedAll) Icons.Default.Check else Icons.Default.ContentCopy,
+                                    contentDescription = "Copy terminal feed",
+                                    tint = if (justCopiedAll) Color(0xFF69F0AE) else Color(0xFF9E9E9E)
+                                )
+                            }
+                        }
+                        // Selectable like a real terminal (long-press to select, drag handles to
+                        // extend) in addition to the 1-tap "Copy all" above.
+                        SelectionContainer(modifier = Modifier.fillMaxSize()) {
+                            LazyColumn(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(horizontal = 8.dp)
+                            ) {
+                                items(outputHistory) { chunk ->
+                                    Text(
+                                        text = chunk,
+                                        color = Color(0xFF80D8FF),
+                                        fontSize = 12.sp,
+                                        fontFamily = FontFamily.Monospace
+                                    )
+                                }
+                            }
                         }
                     }
                 }
             }
         }
 
-        // --- 🌟 1-Tap DPIK & ARH Workflow Macros Drawer ---
-        
-    // 🌟 Tmux Session Discovery Picker Modal (moggsh pattern)
-    if (state.showTmuxPicker) {
-        TmuxSessionPickerModal(
-            sessions = state.availableSessions,
-            onSelectSession = { viewModel.attachTmux(it) },
-            onCreateNewSession = { viewModel.attachTmux(it) },
-            onDismiss = { viewModel.toggleTmuxPicker(false) }
+        SessionModals(
+            state = state,
+            viewModel = viewModel,
+            onApprove = onApprove
         )
-    }
-
-    if (state.showMacrosModal) {
-        WorkflowMacrosModal(
-            onTriggerMacro = { cmd ->
-                viewModel.sendPrompt(cmd)
-                viewModel.toggleMacrosModal(false)
-            },
-            onDismiss = { viewModel.toggleMacrosModal(false) }
-        )
-    }
-
-        // --- ⚡ Moggsh-style Floating Approval HUD ---
-        if (state.viewMode != ViewMode.McpBridge) {
-            FloatingApprovalHud(
-                pendingCommand = state.pendingApprovalCommand,
-                onApprove = onApprove
-            )
-        }
 
         // --- ⌨️ Quick-Action Extended Key Bar ---
         if (state.isAttached && state.viewMode != ViewMode.McpBridge) {
@@ -923,5 +996,81 @@ fun AuditLogView(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun SessionModals(
+    state: SessionUiState,
+    viewModel: SessionViewModel,
+    onApprove: (Boolean) -> Unit
+) {
+    val context = LocalContext.current
+
+    if (state.showTmuxPicker) {
+        TmuxSessionPickerModal(
+            sessions = state.availableSessions,
+            onSelectSession = { viewModel.attachTmux(it) },
+            onCreateNewSession = { viewModel.attachTmux(it) },
+            onDismiss = { viewModel.toggleTmuxPicker(false) }
+        )
+    }
+
+    if (state.showMacrosModal) {
+        WorkflowMacrosModal(
+            onTriggerMacro = { cmd ->
+                viewModel.sendPrompt(cmd)
+                viewModel.toggleMacrosModal(false)
+            },
+            onDismiss = { viewModel.toggleMacrosModal(false) }
+        )
+    }
+
+    if (state.showRepoPickerModal) {
+        RepoPickerBottomSheet(
+            authManager = viewModel.gitHubAuthManager,
+            client = viewModel.gitHubClient,
+            onDismiss = { viewModel.toggleRepoPickerModal(false) },
+            onSelectRepo = { repo ->
+                // Public repos clone anonymously over HTTPS; private repos need the device-flow
+                // token embedded in the URL, or the remote host's git has no credentials and the
+                // clone fails (or hangs on an interactive prompt the pane can't answer).
+                val cloneUrl = if (repo.isPrivate) {
+                    val token = viewModel.gitHubAuthManager.getStoredToken()
+                    if (token != null) {
+                        repo.cloneUrl.replaceFirst("https://", "https://x-access-token:$token@")
+                    } else {
+                        repo.cloneUrl
+                    }
+                } else {
+                    repo.cloneUrl
+                }
+                viewModel.sendPrompt("git clone $cloneUrl")
+            }
+        )
+    }
+
+    if (state.showTransferModal) {
+        WorkspaceTransferModal(
+            remoteDestinationPath = "~/uploads/",
+            onDismiss = { viewModel.toggleTransferModal(false) },
+            onConfirmUpload = { items ->
+                Toast.makeText(context, "Staged ${items.size} items for upload", Toast.LENGTH_SHORT).show()
+            }
+        )
+    }
+
+    if (state.selectedArtifact != null) {
+        ArtifactPreviewSheet(
+            artifact = state.selectedArtifact,
+            onDismiss = { viewModel.selectArtifact(null) }
+        )
+    }
+
+    if (state.viewMode != ViewMode.McpBridge) {
+        FloatingApprovalHud(
+            pendingCommand = state.pendingApprovalCommand,
+            onApprove = onApprove
+        )
     }
 }

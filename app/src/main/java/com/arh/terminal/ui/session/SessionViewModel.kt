@@ -5,12 +5,14 @@ import androidx.lifecycle.viewModelScope
 import com.arh.terminal.core.mcp.server.McpServerEngine
 import com.arh.terminal.core.relay.client.RelayStatus
 import com.arh.terminal.core.relay.client.RelayWebSocketClient
+import com.arh.terminal.data.artifacts.AgentArtifact
 import com.arh.terminal.data.audit.AgentAuditJournal
 import com.arh.terminal.data.audit.ConsentTier
 import com.arh.terminal.data.profiles.ConnectionProfile
 import com.arh.terminal.data.profiles.ProfileRepository
 import com.arh.terminal.ui.conversation.AgentTurn
 import com.arh.terminal.util.NetworkMonitor
+import com.arh.terminal.util.SecretRedaction
 import com.pocketshell.core.agents.AgentKind
 import com.pocketshell.core.agents.ClaudeCodeParser
 import com.pocketshell.core.agents.ConversationEvent
@@ -37,6 +39,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import org.json.JSONObject
 import java.io.File
 import java.nio.charset.StandardCharsets
 import java.util.UUID
@@ -62,6 +65,31 @@ class SessionViewModel @Inject constructor(
     private val claudeParser = ClaudeCodeParser()
     private var lastUsedKeyPem: String = ""
     private var pendingConsentDeferred: CompletableDeferred<Boolean>? = null
+
+    // Artifact producer for the ArtifactCard/ArtifactPreviewSheet pipeline: a "Write" tool
+    // call (Claude Code's file-write tool) that resolves without error becomes an
+    // AgentArtifact, held here until the next assistant message claims it — mirroring how a
+    // real session reads (agent writes a file via tool call, then continues its reply).
+    // Keyed by paneId: multiple panes (e.g. a tmux split) interleave through the same
+    // handleTmuxEvent, so this must not be shared across panes or one pane's artifact can be
+    // claimed by another pane's next assistant message.
+    private val pendingWriteArtifactsByPane = mutableMapOf<String, MutableMap<String, AgentArtifact>>()
+    private val unclaimedArtifactsByPane = mutableMapOf<String, MutableList<AgentArtifact>>()
+
+    val gitHubAuthManager: com.arh.terminal.data.github.GitHubAuthManager = com.arh.terminal.data.github.GitHubAuthManager(context)
+    val gitHubClient: com.arh.terminal.data.github.GitHubClient = com.arh.terminal.data.github.GitHubClient(gitHubAuthManager)
+
+    fun toggleRepoPickerModal(show: Boolean) {
+        _uiState.update { it.copy(showRepoPickerModal = show) }
+    }
+
+    fun toggleTransferModal(show: Boolean) {
+        _uiState.update { it.copy(showTransferModal = show) }
+    }
+
+    fun selectArtifact(artifact: com.arh.terminal.data.artifacts.AgentArtifact?) {
+        _uiState.update { it.copy(selectedArtifact = artifact) }
+    }
 
     init {
         mcpServerEngine.toolRegistry.consentGate = ConsentGate { name, args, tier ->
@@ -338,7 +366,15 @@ class SessionViewModel @Inject constructor(
         val target = _uiState.value.selectedPaneId ?: _uiState.value.panes.firstOrNull()?.paneId ?: return
         if (promptText.isBlank()) return
 
-        auditJournal.recordAction("Agent Prompt", "send_prompt", promptText.take(60), ConsentTier.MUTATIVE)
+        // Redact before truncating: a credential embedded early in the command (e.g. a
+        // private-repo `git clone https://x-access-token:<token>@...`) would otherwise land
+        // in the first 60 chars of the app's own persistent audit journal in plaintext.
+        auditJournal.recordAction(
+            "Agent Prompt",
+            "send_prompt",
+            SecretRedaction.redact(promptText).take(60),
+            ConsentTier.MUTATIVE
+        )
 
         if (_uiState.value.transportMode == TransportMode.RelayWebSocket) {
             relayClient.send(promptText)
@@ -376,7 +412,7 @@ class SessionViewModel @Inject constructor(
                 _uiState.update { state ->
                     val existingPane = state.panes.find { it.paneId == pId }
                     val currentTurns = existingPane?.agentTurns ?: emptyList()
-                    val newTurns = parseOutputTurns(rawText, currentTurns)
+                    val newTurns = parseOutputTurns(pId, rawText, currentTurns)
 
                     val updatedPanes = if (existingPane != null) {
                         state.panes.map { p ->
@@ -410,9 +446,11 @@ class SessionViewModel @Inject constructor(
         }
     }
 
-    private fun parseOutputTurns(chunk: String, currentTurns: List<AgentTurn>): List<AgentTurn> {
+    private fun parseOutputTurns(paneId: String, chunk: String, currentTurns: List<AgentTurn>): List<AgentTurn> {
         val turns = currentTurns.toMutableList()
         val events = claudeParser.parseLine(chunk)
+        val pendingWriteArtifacts = pendingWriteArtifactsByPane.getOrPut(paneId) { mutableMapOf() }
+        val unclaimedArtifacts = unclaimedArtifactsByPane.getOrPut(paneId) { mutableListOf() }
 
         for (e in events) {
             when (e) {
@@ -426,17 +464,23 @@ class SessionViewModel @Inject constructor(
                             )
                         )
                     } else {
+                        val artifacts = unclaimedArtifacts.toList()
+                        unclaimedArtifacts.clear()
                         turns.add(
                             AgentTurn.AssistantMessage(
                                 id = e.id,
                                 timestamp = e.atMillis ?: System.currentTimeMillis(),
                                 agent = e.agent,
-                                text = e.text
+                                text = e.text,
+                                artifacts = artifacts
                             )
                         )
                     }
                 }
                 is ConversationEvent.ToolCall -> {
+                    if (e.name == "Write") {
+                        parseWriteArtifact(e.id, e.input)?.let { pendingWriteArtifacts[e.id] = it }
+                    }
                     turns.add(
                         AgentTurn.ToolInvocation(
                             id = e.id,
@@ -449,12 +493,37 @@ class SessionViewModel @Inject constructor(
                 is ConversationEvent.ToolResult -> {
                     val last = turns.lastOrNull()
                     if (last is AgentTurn.ToolInvocation && last.id == e.toolCallId) {
-                        turns[turns.lastIndex] = last.copy(output = e.output)
+                        turns[turns.lastIndex] = last.copy(output = e.output, isError = e.isError)
+                    }
+                    pendingWriteArtifacts.remove(e.toolCallId)?.let { artifact ->
+                        if (!e.isError) unclaimedArtifacts += artifact
                     }
                 }
                 else -> Unit
             }
         }
         return turns.takeLast(100)
+    }
+
+    /** Parses a Claude Code "Write" tool call's raw JSON input into an [AgentArtifact]. */
+    private fun parseWriteArtifact(callId: String, rawInput: String): AgentArtifact? {
+        val input = runCatching { JSONObject(rawInput) }.getOrNull() ?: return null
+        val filePath = input.optString("file_path").ifBlank { return null }
+        val content = input.optString("content")
+        val fileName = filePath.substringAfterLast('/')
+        return AgentArtifact(
+            id = callId,
+            fileName = fileName,
+            fileType = fileName.substringAfterLast('.', missingDelimiterValue = "txt"),
+            previewContent = content,
+            sourceContent = content,
+            sizeFormatted = formatArtifactSize(content.toByteArray(StandardCharsets.UTF_8).size)
+        )
+    }
+
+    private fun formatArtifactSize(bytes: Int): String = when {
+        bytes < 1024 -> "$bytes B"
+        bytes < 1024 * 1024 -> "%.1f KB".format(bytes / 1024.0)
+        else -> "%.1f MB".format(bytes / (1024.0 * 1024.0))
     }
 }
