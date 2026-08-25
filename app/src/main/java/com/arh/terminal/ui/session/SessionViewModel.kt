@@ -63,6 +63,21 @@ class SessionViewModel @Inject constructor(
     private var lastUsedKeyPem: String = ""
     private var pendingConsentDeferred: CompletableDeferred<Boolean>? = null
 
+    val gitHubAuthManager: com.arh.terminal.data.github.GitHubAuthManager = com.arh.terminal.data.github.GitHubAuthManager(context)
+    val gitHubClient: com.arh.terminal.data.github.GitHubClient = com.arh.terminal.data.github.GitHubClient(gitHubAuthManager)
+
+    fun toggleRepoPickerModal(show: Boolean) {
+        _uiState.update { it.copy(showRepoPickerModal = show) }
+    }
+
+    fun toggleTransferModal(show: Boolean) {
+        _uiState.update { it.copy(showTransferModal = show) }
+    }
+
+    fun selectArtifact(artifact: com.arh.terminal.data.artifacts.AgentArtifact?) {
+        _uiState.update { it.copy(selectedArtifact = artifact) }
+    }
+
     init {
         mcpServerEngine.toolRegistry.consentGate = ConsentGate { name, args, tier ->
             requestOperatorConsent(name, args, tier)

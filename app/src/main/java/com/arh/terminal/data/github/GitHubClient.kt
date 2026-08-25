@@ -13,19 +13,27 @@ import javax.inject.Singleton
 class GitHubClient @Inject constructor(
     private val authManager: GitHubAuthManager
 ) {
+    companion object {
+        private const val CONNECT_TIMEOUT_MS = 10_000
+        private const val READ_TIMEOUT_MS = 15_000
+    }
+
     suspend fun listUserRepositories(): Result<List<GitHubRepo>> = withContext(Dispatchers.IO) {
+        var conn: HttpURLConnection? = null
         try {
             val token = authManager.getStoredToken() ?: return@withContext Result.failure(Exception("Not authenticated with GitHub"))
             val url = URL("https://api.github.com/user/repos?sort=updated&per_page=50")
-            val conn = (url.openConnection() as HttpURLConnection).apply {
+            conn = (url.openConnection() as HttpURLConnection).apply {
                 requestMethod = "GET"
                 setRequestProperty("Authorization", "Bearer $token")
                 setRequestProperty("Accept", "application/vnd.github.v3+json")
                 setRequestProperty("User-Agent", "ARH-Terminal")
+                connectTimeout = CONNECT_TIMEOUT_MS
+                readTimeout = READ_TIMEOUT_MS
             }
 
             if (conn.responseCode in 200..299) {
-                val text = conn.inputStream.bufferedReader().readText()
+                val text = conn.inputStream.bufferedReader().use { it.readText() }
                 val array = JSONArray(text)
                 val repos = mutableListOf<GitHubRepo>()
                 for (i in 0 until array.length()) {
@@ -49,27 +57,32 @@ class GitHubClient @Inject constructor(
                 }
                 Result.success(repos)
             } else {
-                val err = conn.errorStream?.bufferedReader()?.readText() ?: "HTTP ${conn.responseCode}"
+                val err = conn.errorStream?.bufferedReader()?.use { it.readText() } ?: "HTTP ${conn.responseCode}"
                 Result.failure(Exception("Failed to fetch repositories: $err"))
             }
         } catch (e: Exception) {
             Result.failure(e)
+        } finally {
+            conn?.disconnect()
         }
     }
 
     suspend fun listBranches(owner: String, repo: String): Result<List<GitHubBranch>> = withContext(Dispatchers.IO) {
+        var conn: HttpURLConnection? = null
         try {
             val token = authManager.getStoredToken() ?: return@withContext Result.failure(Exception("Not authenticated"))
             val url = URL("https://api.github.com/repos/$owner/$repo/branches")
-            val conn = (url.openConnection() as HttpURLConnection).apply {
+            conn = (url.openConnection() as HttpURLConnection).apply {
                 requestMethod = "GET"
                 setRequestProperty("Authorization", "Bearer $token")
                 setRequestProperty("Accept", "application/vnd.github.v3+json")
                 setRequestProperty("User-Agent", "ARH-Terminal")
+                connectTimeout = CONNECT_TIMEOUT_MS
+                readTimeout = READ_TIMEOUT_MS
             }
 
             if (conn.responseCode in 200..299) {
-                val text = conn.inputStream.bufferedReader().readText()
+                val text = conn.inputStream.bufferedReader().use { it.readText() }
                 val array = JSONArray(text)
                 val branches = mutableListOf<GitHubBranch>()
                 for (i in 0 until array.length()) {
@@ -83,26 +96,32 @@ class GitHubClient @Inject constructor(
                 }
                 Result.success(branches)
             } else {
-                Result.failure(Exception("HTTP ${conn.responseCode} fetching branches"))
+                val err = conn.errorStream?.bufferedReader()?.use { it.readText() } ?: "HTTP ${conn.responseCode}"
+                Result.failure(Exception("Failed to fetch branches: $err"))
             }
         } catch (e: Exception) {
             Result.failure(e)
+        } finally {
+            conn?.disconnect()
         }
     }
 
     suspend fun listIssues(owner: String, repo: String): Result<List<GitHubIssue>> = withContext(Dispatchers.IO) {
+        var conn: HttpURLConnection? = null
         try {
             val token = authManager.getStoredToken() ?: return@withContext Result.failure(Exception("Not authenticated"))
             val url = URL("https://api.github.com/repos/$owner/$repo/issues?state=open&per_page=30")
-            val conn = (url.openConnection() as HttpURLConnection).apply {
+            conn = (url.openConnection() as HttpURLConnection).apply {
                 requestMethod = "GET"
                 setRequestProperty("Authorization", "Bearer $token")
                 setRequestProperty("Accept", "application/vnd.github.v3+json")
                 setRequestProperty("User-Agent", "ARH-Terminal")
+                connectTimeout = CONNECT_TIMEOUT_MS
+                readTimeout = READ_TIMEOUT_MS
             }
 
             if (conn.responseCode in 200..299) {
-                val text = conn.inputStream.bufferedReader().readText()
+                val text = conn.inputStream.bufferedReader().use { it.readText() }
                 val array = JSONArray(text)
                 val issues = mutableListOf<GitHubIssue>()
                 for (i in 0 until array.length()) {
@@ -122,26 +141,32 @@ class GitHubClient @Inject constructor(
                 }
                 Result.success(issues)
             } else {
-                Result.failure(Exception("HTTP ${conn.responseCode} fetching issues"))
+                val err = conn.errorStream?.bufferedReader()?.use { it.readText() } ?: "HTTP ${conn.responseCode}"
+                Result.failure(Exception("Failed to fetch issues: $err"))
             }
         } catch (e: Exception) {
             Result.failure(e)
+        } finally {
+            conn?.disconnect()
         }
     }
 
     suspend fun getUserProfile(): Result<GitHubUser> = withContext(Dispatchers.IO) {
+        var conn: HttpURLConnection? = null
         try {
             val token = authManager.getStoredToken() ?: return@withContext Result.failure(Exception("Not authenticated"))
             val url = URL("https://api.github.com/user")
-            val conn = (url.openConnection() as HttpURLConnection).apply {
+            conn = (url.openConnection() as HttpURLConnection).apply {
                 requestMethod = "GET"
                 setRequestProperty("Authorization", "Bearer $token")
                 setRequestProperty("Accept", "application/vnd.github.v3+json")
                 setRequestProperty("User-Agent", "ARH-Terminal")
+                connectTimeout = CONNECT_TIMEOUT_MS
+                readTimeout = READ_TIMEOUT_MS
             }
 
             if (conn.responseCode in 200..299) {
-                val text = conn.inputStream.bufferedReader().readText()
+                val text = conn.inputStream.bufferedReader().use { it.readText() }
                 val obj = JSONObject(text)
                 Result.success(
                     GitHubUser(
@@ -153,10 +178,13 @@ class GitHubClient @Inject constructor(
                     )
                 )
             } else {
-                Result.failure(Exception("HTTP ${conn.responseCode} fetching user profile"))
+                val err = conn.errorStream?.bufferedReader()?.use { it.readText() } ?: "HTTP ${conn.responseCode}"
+                Result.failure(Exception("Failed to fetch user profile: $err"))
             }
         } catch (e: Exception) {
             Result.failure(e)
+        } finally {
+            conn?.disconnect()
         }
     }
 }

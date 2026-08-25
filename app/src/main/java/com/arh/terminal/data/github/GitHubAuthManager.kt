@@ -25,6 +25,8 @@ class GitHubAuthManager @Inject constructor(
         private const val KEY_ENCRYPTED_TOKEN = "github_oauth_token_encrypted"
         private const val MIN_WAIT_SECONDS = 5
         private const val MAX_POLL_ATTEMPTS = 60
+        private const val CONNECT_TIMEOUT_MS = 10_000
+        private const val READ_TIMEOUT_MS = 15_000
     }
 
     private val prefs: SharedPreferences by lazy {
@@ -32,12 +34,15 @@ class GitHubAuthManager @Inject constructor(
     }
 
     suspend fun requestDeviceCode(): Result<GitHubDeviceAuth> = withContext(Dispatchers.IO) {
+        var conn: HttpURLConnection? = null
         try {
             val url = URL("https://github.com/login/device/code")
-            val conn = (url.openConnection() as HttpURLConnection).apply {
+            conn = (url.openConnection() as HttpURLConnection).apply {
                 requestMethod = "POST"
                 setRequestProperty("Accept", "application/json")
                 setRequestProperty("Content-Type", "application/json")
+                connectTimeout = CONNECT_TIMEOUT_MS
+                readTimeout = READ_TIMEOUT_MS
                 doOutput = true
             }
 
@@ -49,7 +54,7 @@ class GitHubAuthManager @Inject constructor(
             OutputStreamWriter(conn.outputStream).use { it.write(payload.toString()) }
 
             if (conn.responseCode in 200..299) {
-                val responseText = conn.inputStream.bufferedReader().readText()
+                val responseText = conn.inputStream.bufferedReader().use { it.readText() }
                 val json = JSONObject(responseText)
                 Result.success(
                     GitHubDeviceAuth(
@@ -61,11 +66,13 @@ class GitHubAuthManager @Inject constructor(
                     )
                 )
             } else {
-                val err = conn.errorStream?.bufferedReader()?.readText() ?: "HTTP ${conn.responseCode}"
+                val err = conn.errorStream?.bufferedReader()?.use { it.readText() } ?: "HTTP ${conn.responseCode}"
                 Result.failure(Exception("Failed to request device code: $err"))
             }
         } catch (e: Exception) {
             Result.failure(e)
+        } finally {
+            conn?.disconnect()
         }
     }
 
@@ -77,12 +84,15 @@ class GitHubAuthManager @Inject constructor(
             delay(waitSec * 1000L)
             attempts++
 
+            var conn: HttpURLConnection? = null
             try {
                 val url = URL("https://github.com/login/oauth/access_token")
-                val conn = (url.openConnection() as HttpURLConnection).apply {
+                conn = (url.openConnection() as HttpURLConnection).apply {
                     requestMethod = "POST"
                     setRequestProperty("Accept", "application/json")
                     setRequestProperty("Content-Type", "application/json")
+                    connectTimeout = CONNECT_TIMEOUT_MS
+                    readTimeout = READ_TIMEOUT_MS
                     doOutput = true
                 }
 
@@ -95,7 +105,7 @@ class GitHubAuthManager @Inject constructor(
                 OutputStreamWriter(conn.outputStream).use { it.write(payload.toString()) }
 
                 if (conn.responseCode in 200..299) {
-                    val responseText = conn.inputStream.bufferedReader().readText()
+                    val responseText = conn.inputStream.bufferedReader().use { it.readText() }
                     val json = JSONObject(responseText)
                     if (json.has("access_token")) {
                         val token = json.getString("access_token")
@@ -108,9 +118,13 @@ class GitHubAuthManager @Inject constructor(
                     } else if (error != "authorization_pending") {
                         return@withContext Result.failure(Exception("Authorization error: $error"))
                     }
+                } else {
+                    conn.errorStream?.bufferedReader()?.use { it.readText() }
                 }
             } catch (_: Exception) {
                 // Continue polling until timeout
+            } finally {
+                conn?.disconnect()
             }
         }
         Result.failure(Exception("Device authentication timed out."))

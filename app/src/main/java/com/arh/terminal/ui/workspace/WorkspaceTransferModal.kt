@@ -1,6 +1,7 @@
 package com.arh.terminal.ui.workspace
 
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.provider.OpenableColumns
 import android.widget.Toast
@@ -76,6 +77,14 @@ fun WorkspaceTransferModal(
         contract = ActivityResultContracts.OpenMultipleDocuments()
     ) { uris ->
         uris.forEach { uri ->
+            try {
+                context.contentResolver.takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+            } catch (_: Exception) {
+                // Some transient content providers don't support persistable flags
+            }
             val nameAndSize = queryFileNameAndSize(context, uri)
             stagedFiles.add(
                 StagedUploadItem(
@@ -91,12 +100,21 @@ fun WorkspaceTransferModal(
     val treePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocumentTree()
     ) { uri ->
-        uri?.let {
+        uri?.let { treeUri ->
+            try {
+                context.contentResolver.takePersistableUriPermission(
+                    treeUri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+            } catch (_: Exception) {
+                // Ignore if provider doesn't support persistable permissions
+            }
+            val name = treeUri.lastPathSegment ?: "Selected Folder"
             stagedFiles.add(
                 StagedUploadItem(
-                    uri = it,
-                    name = it.lastPathSegment ?: "Selected Directory",
-                    sizeBytes = 0,
+                    uri = treeUri,
+                    name = name,
+                    sizeBytes = 0L,
                     isDirectory = true
                 )
             )
@@ -311,19 +329,26 @@ fun WorkspaceTransferModal(
 }
 
 private fun queryFileNameAndSize(context: Context, uri: Uri): Pair<String, Long> {
-    var name = uri.lastPathSegment ?: "file"
-    var size = 0L
+    var name: String = uri.lastPathSegment ?: "file"
+    var size: Long = 0L
     try {
         context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
             if (cursor.moveToFirst()) {
                 val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
                 val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
-                if (nameIndex != -1) name = cursor.getString(nameIndex)
-                if (sizeIndex != -1) size = cursor.getLong(sizeIndex)
+                if (nameIndex != -1) {
+                    val rawName = cursor.getString(nameIndex)
+                    if (!rawName.isNullOrBlank()) {
+                        name = rawName
+                    }
+                }
+                if (sizeIndex != -1 && !cursor.isNull(sizeIndex)) {
+                    size = cursor.getLong(sizeIndex)
+                }
             }
         }
     } catch (_: Exception) {
-        // Fallback to defaults
+        // Fallback to default name and size
     }
     return Pair(name, size)
 }

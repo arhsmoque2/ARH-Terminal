@@ -1,6 +1,7 @@
 package com.arh.terminal.ui.conversation
 
 import androidx.compose.runtime.Immutable
+import com.arh.terminal.data.artifacts.AgentArtifact
 import com.pocketshell.core.agents.AgentKind
 import com.pocketshell.core.agents.ConversationRole
 
@@ -22,7 +23,8 @@ sealed interface AgentTurn {
         override val timestamp: Long,
         val agent: AgentKind,
         val text: String,
-        val thinking: String? = null
+        val thinking: String? = null,
+        val artifacts: List<AgentArtifact> = emptyList()
     ) : AgentTurn
 
     @Immutable
@@ -32,6 +34,7 @@ sealed interface AgentTurn {
         val toolName: String,
         val arguments: String,
         val output: String? = null,
-        val isPendingApproval: Boolean = false
+        val isPendingApproval: Boolean = false,
+        val durationMs: Long? = null
     ) : AgentTurn
 }

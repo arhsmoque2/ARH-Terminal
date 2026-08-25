@@ -63,5 +63,8 @@ data class SessionUiState(
     val pendingSharedPrompt: String? = null,
     val showMacrosModal: Boolean = false,
     val showTmuxPicker: Boolean = false,
-    val showJoypad: Boolean = false
+    val showJoypad: Boolean = false,
+    val showRepoPickerModal: Boolean = false,
+    val showTransferModal: Boolean = false,
+    val selectedArtifact: com.arh.terminal.data.artifacts.AgentArtifact? = null
 )

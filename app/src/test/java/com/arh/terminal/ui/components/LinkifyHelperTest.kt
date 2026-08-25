@@ -17,6 +17,26 @@ class LinkifyHelperTest {
     }
 
     @Test
+    fun extractUrls_stripsTrailingPunctuation() {
+        val text = "Read the guide at https://example.com/guide. Thanks! Also see (https://example.com/faq), or https://example.com/help?"
+        val urls = LinkifyHelper.extractUrls(text)
+
+        assertEquals(3, urls.size)
+        assertEquals("https://example.com/guide", urls[0])
+        assertEquals("https://example.com/faq", urls[1])
+        assertEquals("https://example.com/help", urls[2])
+    }
+
+    @Test
+    fun extractUrls_preservesBalancedParentheses() {
+        val text = "See https://en.wikipedia.org/wiki/Rust_(programming_language) for details."
+        val urls = LinkifyHelper.extractUrls(text)
+
+        assertEquals(1, urls.size)
+        assertEquals("https://en.wikipedia.org/wiki/Rust_(programming_language)", urls[0])
+    }
+
+    @Test
     fun extractUrls_returnsEmptyForPlainProse() {
         val text = "This is plain prose with no links."
         val urls = LinkifyHelper.extractUrls(text)
