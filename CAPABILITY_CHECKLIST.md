@@ -71,8 +71,8 @@ Legend: ✅ Done & shipped · 🟡 Partially covered · ⬜ Gap (planned, not bu
 | 6.1 | Browse the remote host's filesystem over SFTP | 🟡 | Backend only — `RemoteEntry`/`SshSession.listDirectory` in `:core:core-ssh` (built for "issue #528 SFTP file explorer"); **no `FilesScreen`/browser UI exists in `:app` yet** |
 | 6.2 | Upload a file from Android to the remote host, resumable across drops | 🟡 | Backend only — `ResumableUpload.kt`'s `QueueSidecarResumableUploader` (durable checkpoint + resume-from-offset + atomic remote `mv`) already exists in `:core:core-ssh`; **no picker/queue UI wired to it** |
 | 6.3 | "Taildrop"-style 1-tap send straight to the PC | ⬜ | Real Tailscale Taildrop is Tailscale's own P2P protocol driven through their local daemon API (`tailscale file cp` / the Tailscale app's share target) — ARH-Terminal can't drive that without embedding Tailscale's own client. The SFTP upload in 6.2, run over the same Tailscale-carried SSH connection the app already uses, gets the same practical outcome ("share → lands in a folder on my PC") without that dependency — recommend building on 6.2 rather than chasing literal Taildrop |
-| 6.4 | Export a chat/session transcript to a Markdown file (oxproxion pattern) | ⬜ | Not built — no export code exists; would walk `List<AgentTurn>` into Markdown (user/assistant turns → `**You:**`/`**Agent:**`, tool calls → fenced blocks) and save via `MediaStore`/scoped storage |
-| 6.5 | The app's own export/downloads folder shows up as a source when uploading | ⬜ | Not built — depends on 6.1/6.2 (an upload source picker to exist) and 6.4 (something to have been saved there); once both exist this is a few lines (default the picker's start directory to the export folder) |
+| 6.4 | Export a chat/session transcript to a Markdown file | ✅ | `SessionMarkdownExporter.kt` (`exportToMarkdown` + native `ACTION_SEND` share intent) |
+| 6.5 | The app's own export/downloads folder shows up as a source when uploading | 🟡 | `WorkspaceTransferModal.kt` provides SAF file and folder tree picking |
 
 ## 7. Multi-session & in-app links
 
@@ -80,7 +80,7 @@ Legend: ✅ Done & shipped · 🟡 Partially covered · ⬜ Gap (planned, not bu
 |---|---|---|---|
 | 7.1 | Attach/detach the active psmux session via a toggle | ✅ | `SessionScreen`'s "Interactive psmux Attach/Detach Slider Card" — a real `Switch` (`Icons.Link`/`LinkOff`) wired to `viewModel.attachTmux()`/`detachTmux()`, already logged to the audit journal |
 | 7.2 | Open several sessions/windows at once, each independently attachable | ⬜ | Gap — `SessionUiState` models exactly one `activeSessionName` + one `isAttached` flag; there's no session-list/tab model behind it. The attach toggle in 7.1 is real but singular — extending it to N parallel windows is a state-model change (`SessionUiState` → a list of per-window states), not just a UI tab bar |
-| 7.3 | URLs in Agent Chat / Terminal Feed render as tappable hyperlinks | ⬜ | Not built — no linkify/URL-pattern code exists anywhere in the app today |
+| 7.3 | URLs in Agent Chat / Terminal Feed render as tappable hyperlinks | ✅ | `LinkifyHelper.kt` (Compose `LinkAnnotation.Url` zero-dependency regex URL detection) |
 
 ## Net gaps to close, in priority order
 
