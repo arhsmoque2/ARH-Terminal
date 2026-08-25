@@ -59,6 +59,13 @@ jobs:
       - name: Run Detekt Static Analysis
         run: ./gradlew detekt --no-daemon --stacktrace
 
+      - name: Upload Detekt Reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: detekt-reports
+          path: '**/build/reports/detekt/'
+
   unit-tests-and-doctor:
     name: Unit Tests & As-Built Doctor
     needs: secret-scan
