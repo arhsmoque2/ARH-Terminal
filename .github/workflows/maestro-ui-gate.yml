@@ -1,20 +1,6 @@
-name: Maestro Live UI & Visual Quality Gate
+name: Maestro Live UI & Visual Quality Gate (On-Demand)
 
 on:
-  push:
-    branches: [ main ]
-    paths:
-      - 'app/src/main/**'
-      - '.maestro/**'
-      - 'scripts/ci_maestro_doctor.py'
-      - '.github/workflows/maestro-ui-gate.yml'
-  pull_request:
-    branches: [ main ]
-    paths:
-      - 'app/src/main/**'
-      - '.maestro/**'
-      - 'scripts/ci_maestro_doctor.py'
-      - '.github/workflows/maestro-ui-gate.yml'
   workflow_dispatch:
 
 concurrency:
