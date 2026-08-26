@@ -8,7 +8,10 @@ import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import com.arh.terminal.ui.session.SessionScreen
 import com.arh.terminal.ui.session.SessionViewModel
 import com.arh.terminal.ui.theme.ARHTerminalTheme
@@ -18,6 +21,7 @@ import dagger.hilt.android.AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private val sessionViewModel: SessionViewModel by viewModels()
 
+    @OptIn(ExperimentalComposeUiApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         handleShareIntent(intent)
@@ -26,7 +30,11 @@ class MainActivity : ComponentActivity() {
             androidx.activity.compose.ReportDrawn()
             ARHTerminalTheme {
                 Surface(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .semantics {
+                            testTagsAsResourceId = true
+                        },
                     color = MaterialTheme.colorScheme.background
                 ) {
                     SessionScreen(viewModel = sessionViewModel)

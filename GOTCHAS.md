@@ -71,3 +71,21 @@
 * **Root Cause**: Font scale is an Android system setting, not a supported Maestro flow command.
 * **Permanent Fix**: Set `system/font_scale` in the emulator runner script and restore `1.0` with an EXIT trap; keep the flow focused on layout assertions.
 * **Verification**: The flow parses under the installed Maestro CLI and the emulator script applies 2.0 before tests, restoring 1.0 on exit.
+
+### 13. Jetpack Compose `Modifier.testTag` Invisible to Maestro Without `testTagsAsResourceId = true`
+* **Symptom**: Maestro flows fail with `Assertion is false: id: <test_tag> is visible` (timing out after 30+ seconds), even though the app cold-launches cleanly without any crashes or errors in logcat.
+* **Root Cause**: In Jetpack Compose, `Modifier.testTag(...)` sets internal Compose Semantics (`SemanticsProperties.TestTag`). By default, Compose does NOT expose `testTag` as an Android `resource-id` / `viewIdResourceName` in the OS Accessibility hierarchy (`AccessibilityNodeInfo`). External test drivers (Maestro, UIAutomator, Accessibility Services) inspecting the view hierarchy by `id:` cannot see any Compose test tags.
+* **Permanent Fix**: Enable `testTagsAsResourceId = true` in the root Composable's semantics in `MainActivity.kt`:
+  ```kotlin
+  Surface(
+      modifier = Modifier
+          .fillMaxSize()
+          .semantics {
+              @OptIn(ExperimentalComposeUiApi::class)
+              testTagsAsResourceId = true
+          }
+  ) { ... }
+  ```
+  Also added static enforcement in `scripts/ci_maestro_doctor.py`.
+* **Verification**: `python scripts/ci_maestro_doctor.py` validates `testTagsAsResourceId = true` presence and 100% testTag resolution.
+

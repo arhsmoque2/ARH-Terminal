@@ -31,6 +31,15 @@ def collect_codebase_test_tags() -> set[str]:
     return tags
 
 
+def verify_semantics_resource_id_mapping() -> bool:
+    """Verifies that Jetpack Compose root semantics maps testTags to Android resource IDs for external accessibility tools (Maestro/UIAutomator)."""
+    main_activity = APP_SRC_DIR / "com" / "arh" / "terminal" / "MainActivity.kt"
+    if not main_activity.exists():
+        return False
+    content = main_activity.read_text(encoding="utf-8", errors="replace")
+    return "testTagsAsResourceId = true" in content
+
+
 def parse_simple_yaml_flow(yaml_file: Path) -> tuple[dict, list[str], list[str]]:
     """Simple parser to extract metadata, referenced testTag IDs, and detect anti-patterns."""
     content = yaml_file.read_text(encoding="utf-8")
@@ -75,6 +84,13 @@ def main():
     
     has_errors = False
     all_referenced_tags = set()
+
+    if not verify_semantics_resource_id_mapping():
+        print("[FAIL] Jetpack Compose root semantics missing 'testTagsAsResourceId = true' in MainActivity.kt! External UIAutomator/Maestro accessibility lookups by ID will fail.")
+        has_errors = True
+    else:
+        print("[PASS] Jetpack Compose root semantics maps testTags to Android resource IDs (testTagsAsResourceId = true).\n")
+
     
     for flow in sorted(flow_files):
         meta, ref_ids, anti_patterns = parse_simple_yaml_flow(flow)
