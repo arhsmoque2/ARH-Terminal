@@ -2,9 +2,9 @@ package com.arh.terminal.ui
 
 import android.content.Context
 import androidx.compose.foundation.layout.Column
-import androidx.compose.ui.test.assertDoesNotExist
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import com.arh.terminal.core.mcp.server.McpServerEngine
@@ -155,7 +155,10 @@ class AppUiQualityGateTest {
 
         // The Floating Approval HUD must not render when there is no pending command —
         // it should never collide with the setup form or nav on a fresh/disconnected screen.
-        composeTestRule.onNodeWithTag("hud_approval_card").assertDoesNotExist()
+        assertTrue(
+            "hud_approval_card must not be present with no pending approval command",
+            composeTestRule.onAllNodesWithTag("hud_approval_card").fetchSemanticsNodes(atLeastOneRootRequired = false).isEmpty()
+        )
     }
 
     @Test
