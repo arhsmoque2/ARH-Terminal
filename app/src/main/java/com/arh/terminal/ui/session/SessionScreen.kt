@@ -1055,9 +1055,16 @@ private fun SessionModals(
             remoteDestinationPath = "~/uploads/",
             onDismiss = { viewModel.toggleTransferModal(false) },
             onConfirmUpload = { items ->
-                Toast.makeText(context, "Staged ${items.size} items for upload", Toast.LENGTH_SHORT).show()
+                viewModel.uploadStagedFiles(items, "~/uploads/")
             }
         )
+    }
+
+    LaunchedEffect(state.transferStatusMessage) {
+        state.transferStatusMessage?.let { message ->
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            viewModel.clearTransferStatusMessage()
+        }
     }
 
     if (state.selectedArtifact != null) {

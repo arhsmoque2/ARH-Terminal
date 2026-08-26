@@ -66,5 +66,6 @@ data class SessionUiState(
     val showJoypad: Boolean = false,
     val showRepoPickerModal: Boolean = false,
     val showTransferModal: Boolean = false,
-    val selectedArtifact: com.arh.terminal.data.artifacts.AgentArtifact? = null
+    val selectedArtifact: com.arh.terminal.data.artifacts.AgentArtifact? = null,
+    val transferStatusMessage: String? = null
 )

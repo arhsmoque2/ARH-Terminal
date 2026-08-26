@@ -60,6 +60,8 @@ class AppUiQualityGateTest {
     private val relayClient: RelayWebSocketClient = mockk(relaxed = true)
     private val auditJournal: AgentAuditJournal = AgentAuditJournal()
     private val knownHostsStore: KnownHostsStore = mockk(relaxed = true)
+    private val gitHubAuthManager: com.arh.terminal.data.github.GitHubAuthManager = mockk(relaxed = true)
+    private val gitHubClient: com.arh.terminal.data.github.GitHubClient = mockk(relaxed = true)
     private val context: Context = mockk(relaxed = true)
     private lateinit var viewModel: SessionViewModel
 
@@ -78,6 +80,8 @@ class AppUiQualityGateTest {
             relayClient,
             auditJournal,
             knownHostsStore,
+            gitHubAuthManager,
+            gitHubClient,
             context
         )
     }
