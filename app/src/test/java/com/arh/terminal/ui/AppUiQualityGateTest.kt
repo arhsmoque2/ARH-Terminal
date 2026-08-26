@@ -1,6 +1,8 @@
 package com.arh.terminal.ui
 
 import android.content.Context
+import androidx.compose.foundation.layout.Column
+import androidx.compose.ui.test.assertDoesNotExist
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -12,6 +14,8 @@ import com.arh.terminal.core.relay.client.RelayWebSocketClient
 import com.arh.terminal.data.audit.AgentAuditJournal
 import com.arh.terminal.data.profiles.ProfileRepository
 import com.arh.terminal.data.security.KnownHostsStore
+import com.arh.terminal.ui.components.GamepadJoypadBar
+import com.arh.terminal.ui.components.QuickActionBar
 import com.arh.terminal.ui.components.WorkflowMacrosModal
 import com.arh.terminal.ui.session.SessionScreen
 import com.arh.terminal.ui.session.SessionViewModel
@@ -29,7 +33,9 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import org.junit.After
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -135,5 +141,44 @@ class AppUiQualityGateTest {
         composeTestRule.onNodeWithText("ARH Terminal").assertIsDisplayed()
         assertNotNull(composeTestRule.onNodeWithTag("input_host").fetchSemanticsNode())
         assertNotNull(composeTestRule.onNodeWithTag("btn_connect").fetchSemanticsNode())
+    }
+
+    // --- Parity with the retired .maestro/03_hud_and_joypad_clash_audit.yaml flow ---
+
+    @Test
+    fun verifyNoHudApprovalCardOnDefaultState() {
+        composeTestRule.setContent {
+            ARHTerminalTheme {
+                SessionScreen(viewModel = viewModel)
+            }
+        }
+
+        // The Floating Approval HUD must not render when there is no pending command —
+        // it should never collide with the setup form or nav on a fresh/disconnected screen.
+        composeTestRule.onNodeWithTag("hud_approval_card").assertDoesNotExist()
+    }
+
+    @Test
+    fun verifyJoypadAndQuickActionBarDoNotVisuallyClash() {
+        // Mirrors how SessionScreen stacks these two floating bars when attached to a
+        // session with the joypad toggled on (GamepadJoypadBar above QuickActionBar).
+        composeTestRule.setContent {
+            ARHTerminalTheme {
+                Column {
+                    GamepadJoypadBar(onSendKey = {})
+                    QuickActionBar(onSendKey = {})
+                }
+            }
+        }
+
+        val joypadBounds = composeTestRule.onNodeWithTag("gamepad_joypad_bar").fetchSemanticsNode().boundsInRoot
+        val quickActionBounds = composeTestRule.onNodeWithTag("quick_action_rail").fetchSemanticsNode().boundsInRoot
+
+        assertTrue("GamepadJoypadBar must have a laid-out height", joypadBounds.height > 0f)
+        assertTrue("QuickActionBar must have a laid-out height", quickActionBounds.height > 0f)
+        assertFalse(
+            "GamepadJoypadBar and QuickActionBar must not vertically overlap",
+            joypadBounds.bottom > quickActionBounds.top && quickActionBounds.bottom > joypadBounds.top
+        )
     }
 }

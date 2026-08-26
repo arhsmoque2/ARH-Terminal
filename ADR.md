@@ -64,12 +64,24 @@
 
 ---
 
-## ADR-009: Dual-Tiered Maestro E2E UI Quality Gate (Local-First Studio & Headless CI SwiftShader Resilience)
+## ADR-009: Robolectric + Roborazzi as the Primary UI Quality Gate; Maestro Demoted to On-Demand
 * **Status**: Accepted & Implemented ([PR #6](https://github.com/arhsmoque2/ARH-Terminal/pull/6))
+* **Context**: The original plan (below, struck through) was a headless-emulator Maestro E2E gate blocking every push/PR. In practice it hit a cascade of issues that were each individually fixable but collectively pointed at a mismatch between the tool and what was actually being tested: (1) `Modifier.testTag(...)` isn't exposed as an Android accessibility `resource-id` unless `testTagsAsResourceId = true` is set — a real gotcha, but even after fixing it the flows still failed; (2) the headless `aosp_atd`/SwiftShader emulator's own Maestro automation driver intermittently failed to start within its startup timeout — infra flake unrelated to the app; (3) mid-debug, a swap to a third-party tool confusingly named `maestro-runner` (installed via unauthenticated `curl | bash` from an unrecognized domain, and actually a different UIAutomator2-based stack, not Maestro) was attempted and also failed, and was reverted. Underlying all of this: the 4 flows in question (cold-launch/theme, form/modal lifecycle, HUD/joypad visual-clash, 200%-font-scale/overflow) are single-process Compose rendering concerns — they never needed a real emulator or cross-app UI automation to begin with. Maestro's actual differentiator — driving a real device across process/app boundaries (an OAuth browser handoff, a system file/document picker) — isn't exercised by any of them; ARH-Terminal's GitHub auth is the RFC 8628 Device Flow, which never leaves the app.
+* **Decision**:
+  1. **Tier 1 (primary, blocking)**: `AppUiQualityGateTest.kt` — Robolectric + Compose UI Testing (`createComposeRule`, `onNodeWithTag`, `assertIsDisplayed`, `RuntimeEnvironment.setFontScale`) asserting on the composed semantics tree, in-process, no emulator. Runs in the existing fast `unit-tests-and-doctor` CI job. Covers what all 4 original Maestro flows checked, including HUD/joypad-clash via `boundsInRoot()` overlap assertions (a real geometric check, not just "is composed").
+  2. **Tier 2 (primary, non-blocking yet)**: `AppUiVisualRegressionTest.kt` — Roborazzi (Robolectric Native Graphics) pixel-level screenshot capture for the states semantics assertions can't fully cover (clipping, color, spacing regressions). No baseline goldens are committed yet, so these currently only capture (uploaded as a CI artifact); recording baselines locally (`./gradlew :app:recordRoborazziDebug`) and adding `-Proborazzi.test.verify=true` to CI turns this into a real diff-gate as a follow-up.
+  3. **Maestro: demoted to on-demand** (`maestro-ui-gate.yml`, `workflow_dispatch` only). Kept for its actual strength — a real cross-app/process E2E check — reserved for if/when a feature needs one (a browser-based OAuth redirect, the SAF file-picker flow in Transfer Files), not run on every push/PR.
+* **Consequences**: The blocking CI gate is fast, deterministic, and immune to the whole class of failures above (no emulator boot, no accessibility-tree mapping, no driver startup). Maestro's local-first workflow (`maestro studio`, `RECIPES.md`) remains valid for whatever narrower suite eventually needs it. Cost: Tier 2 isn't yet an enforced gate (no goldens recorded), and this ADR no longer describes the dual-tiered-Maestro design PR #6 originally shipped — superseded in-place rather than as a new ADR, since the original was never actually load-bearing in production.
+
+<details>
+<summary>Original decision (superseded, kept for history)</summary>
+
 * **Context**: Static linting (Detekt) and unit tests (JUnit/Robolectric) cannot detect visual collisions between overlay components (Floating Approval HUD, Gamepad Joypad Bar, QuickActionBar, BottomSheets), modal dismissal lifecycles, or text clipping under accessibility font scaling (200%). However, executing headless Android emulators (`aosp_atd` API 34 with `-gpu swiftshader_indirect`) in cloud CI introduces severe CPU rasterization delays (8–15s for Compose initial composition), causing standard Maestro assertion timeouts (~2s) to fail prematurely.
-* **Decision**: 
+* **Decision**:
   1. **Dual-Tiered Architecture**: Establish a fast static/unit gate (<3m) for routine PRs alongside a dedicated Maestro E2E workflow (`maestro-ui-gate.yml`).
   2. **SwiftShader Resilience**: Wrap initial cold-launch and navigation assertions with `extendedWaitUntil: { visible: { id: "..." }, timeout: 30000 }` and pre-warm app startup post-install in CI.
   3. **Local-First Developer Workflow**: Standardize on native Windows Maestro CLI + `maestro studio` (interactive web inspector at `localhost:9999`) for sub-second flow creation and debugging on real hardware / GPU-backed emulators without CI wait penalties.
 * **Consequences**: Deterministic, flake-resistant E2E test runs in CI; visual collision and 200% font-scale regressions are automatically caught; developer authoring is accelerated via interactive live-hierarchy inspection.
+
+</details>
 
