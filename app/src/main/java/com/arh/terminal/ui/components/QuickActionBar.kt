@@ -22,6 +22,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+import androidx.compose.ui.platform.testTag
+
 sealed class QuickKey(val label: String, val rawSequence: String, val isCommand: Boolean = false, val isMacro: Boolean = false) {
     data object Esc : QuickKey("ESC", "\u001b")
     data object Tab : QuickKey("TAB", "\t")
@@ -68,7 +70,9 @@ fun QuickActionBar(
     )
 
     Surface(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .testTag("quick_action_rail"),
         color = Color(0xFF141414),
         shape = RoundedCornerShape(8.dp)
     ) {
@@ -87,10 +91,14 @@ fun QuickActionBar(
                     else -> Color(0xFF262626) to Color(0xFFE2E8F0)
                 }
 
+                val sanitizedKeyTag = "quick_key_${key.label.replace("/", "").replace(" ", "_").replace(".", "_").replace("^", "ctrl_")}"
+
                 OutlinedButton(
                     onClick = { onSendKey(key) },
                     contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
-                    modifier = Modifier.height(32.dp),
+                    modifier = Modifier
+                        .height(32.dp)
+                        .testTag(sanitizedKeyTag),
                     shape = RoundedCornerShape(6.dp),
                     colors = ButtonDefaults.outlinedButtonColors(
                         containerColor = bgColor,

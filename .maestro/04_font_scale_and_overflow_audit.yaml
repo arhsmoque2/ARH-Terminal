@@ -1,0 +1,31 @@
+appId: com.arh.terminal
+tags:
+  - overflow
+  - typography
+---
+- launchApp:
+    clearState: false
+
+# 1. Accessibility font scaling (200%) is set by the CI script via
+#    `adb shell settings put system font_scale 2.0` before this flow runs —
+#    Maestro has no native setFontScale command.
+
+# 2. Assert Layout Does Not Break or Clip Key Labels
+- extendedWaitUntil:
+    visible: "ARH Terminal"
+    timeout: 30000
+
+- assertVisible:
+    id: "app_title"
+- assertVisible: "Connect"
+- assertVisible: "Android MCP Agent Bridge"
+
+# 3. Test Landscape Density & Screen Real Estate
+- setOrientation: LANDSCAPE_LEFT
+- assertVisible:
+    id: "input_host"
+- assertVisible:
+    id: "btn_connect"
+
+# 4. Restore Standard Dimensions
+- setOrientation: PORTRAIT

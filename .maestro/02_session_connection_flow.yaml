@@ -1,0 +1,38 @@
+appId: com.arh.terminal
+tags:
+  - flows
+  - connection
+---
+- launchApp:
+    clearState: false
+
+# 1. Fill Host & Username
+- extendedWaitUntil:
+    visible: "Connect"
+    timeout: 30000
+
+- tapOn:
+    id: "input_host"
+- inputText: "100.85.170.170"
+
+- tapOn:
+    id: "input_username"
+- inputText: "arh"
+
+# 2. Toggle Save Profile
+- tapOn:
+    id: "btn_save_profile_toggle"
+- assertVisible: "Profile Name (e.g. My Laptop)"
+
+# 3. Open & Inspect Workflow Macros Modal
+- tapOn:
+    id: "btn_workflow_macros"
+- assertVisible:
+    id: "modal_workflow_macros"
+- assertVisible: "⚡ 1-Tap Workflow & Fleet Macros"
+- assertVisible: "🚀 Spawn URUS 4-Agent Fleet"
+
+# 4. Dismiss Modal with back tap
+- back
+- assertNotVisible:
+    id: "modal_workflow_macros"

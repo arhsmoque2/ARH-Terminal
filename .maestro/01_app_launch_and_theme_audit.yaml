@@ -1,0 +1,35 @@
+appId: com.arh.terminal
+tags:
+  - smoke
+  - a11y
+---
+- launchApp:
+    clearState: true
+
+# 1. Cold Launch & Header Inspection (Wait for Jetpack Compose first frame)
+- extendedWaitUntil:
+    visible: "ARH Terminal"
+    timeout: 30000
+
+- assertVisible:
+    id: "app_title"
+- assertVisible: "ARH Terminal"
+
+# 2. Live Network Status Badge
+- assertVisible:
+    id: "network_status_badge"
+
+# 3. Connection Setup Card Fields
+- assertVisible:
+    id: "input_host"
+- assertVisible:
+    id: "input_username"
+- assertVisible:
+    id: "input_password"
+- assertVisible:
+    id: "btn_connect"
+
+# 4. MCP Agent Bridge Daemon Switch
+- assertVisible:
+    id: "switch_mcp_daemon"
+- assertVisible: "Android MCP Agent Bridge"

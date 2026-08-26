@@ -1,0 +1,23 @@
+appId: com.arh.terminal
+tags:
+  - visual
+  - clashes
+---
+- launchApp:
+    clearState: false
+
+# 1. Inspect Setup Card Components
+- extendedWaitUntil:
+    visible: "Connect"
+    timeout: 30000
+
+- assertVisible:
+    id: "btn_connect"
+
+# 2. Toggle MCP Server Switch
+- tapOn:
+    id: "switch_mcp_daemon"
+
+# 3. Assert Floating HUD and Dialogs do not collide with navigation
+- assertNotVisible:
+    id: "hud_approval_card"

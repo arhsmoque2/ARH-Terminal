@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.detekt) apply false
     alias(libs.plugins.kover)
     alias(libs.plugins.spotless) apply false
+    alias(libs.plugins.roborazzi) apply false
 }
 
 dependencies {

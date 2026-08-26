@@ -41,9 +41,51 @@
 * **Permanent Fix**: The `Run APK Signing & Alignment Doctor (Debug)` CI step passes `--max-size-mb 35` for the debug APK; the release step keeps the tight default `8.0` MB budget, since that's the artifact users actually install.
 * **Verification**: `./gradlew :app:assembleDebug` output passes the doctor with the debug-scoped budget; the release budget is unchanged.
 
-### 8. `Secret Leak Scan` Fails Only on `workflow_dispatch` (Manual/Remote-Triggered) Runs
+### 8. Maestro Blackbox Tests vs Compose Dynamic Node Matching
+* **Symptom**: Maestro fails to find buttons or elements when using localized text or dynamic state labels across orientation/font scale changes.
+* **Root Cause**: Relying solely on text matching (`assertVisible: "Connect"`) can fail when text wraps, abbreviates, or changes based on connection state.
+* **Permanent Fix**: Apply explicit `Modifier.testTag(...)` to all interactive surfaces, inputs, and modals (`app_title`, `input_host`, `btn_connect`, `modal_workflow_macros`). Validate tag availability using `python scripts/ci_maestro_doctor.py`.
+* **Verification**: `python scripts/ci_maestro_doctor.py` confirms 100% testTag resolution across all 4 `.maestro/` flows.
+
+### 9. `Secret Leak Scan` Fails Only on `workflow_dispatch` (Manual/Remote-Triggered) Runs
 * **Symptom**: A normal `push` to `main` passes `Secret Leak Scan` cleanly, but manually dispatching the same workflow on the same commit (`gh workflow run` / the GitHub API / an agent using `actions_run_trigger`) fails it with a `generic-api-key` finding in `RECIPES.md`, pointing at a commit from days earlier.
 * **Root Cause**: `gitleaks/gitleaks-action@v2` scans only the incremental diff on `push`/`pull_request` events (it has a before/after SHA to diff), but has no baseline on a manual `workflow_dispatch` run, so it falls back to scanning **full git history**. That surfaced a real bearer-token example value committed in `RECIPES.md` on 2026-08-18 — already redacted to a placeholder on current `main`, but still sitting in git history forever, since no push has ever re-touched that exact line since.
 * **Permanent Fix**: Rather than rewriting history to purge one already-dead credential (disruptive to every existing clone/fork, for a token that's dynamically regenerated per `McpServerEngine` session anyway — see `asbuilt.md`), added `.gitleaksignore` with the exact `commit:file:rule:line` fingerprint. This is a deliberate exception, not a blanket exemption: every other rule and every other file/line stays fully scanned, including future edits to `RECIPES.md` itself. Revisit with a real history rewrite only if this pattern (live secrets landing in docs) recurs — one dead historical finding doesn't justify it.
   * First attempt used `.gitleaks.toml` with `[allowlist] fingerprints = [...]` — gitleaks loaded the config fine (confirmed in the debug log) but the finding still fired: `fingerprints` isn't a real key in gitleaks' `[allowlist]` schema, so it was silently ignored rather than erroring. `.gitleaksignore` (a plain file, one fingerprint per line, gitleaks' actual purpose-built mechanism for this) is what's verified working — see below.
 * **Verification**: Manually dispatched `ci.yml` (the trigger that forces the full-history scan) three times against the real workflow: (1) before any fix — reproduced the failure; (2) with the `.gitleaks.toml`-only attempt — same failure, same fingerprint, confirming that approach was a no-op; (3) with `.gitleaksignore` — `32 commits scanned... no leaks found`, job green. Each step confirmed by reading that run's own log, not assumed from the previous one.
+
+### 10. Headless ATD Emulator Cannot Install ARM-Only APK
+* **Symptom**: CI emulator installation fails with `INSTALL_FAILED_NO_MATCHING_ABIS`.
+* **Root Cause**: The workflow runs an `x86_64` Android emulator while the debug APK was packaged only for ARM ABIs.
+* **Permanent Fix**: Package `x86` and `x86_64` alongside the ARM variants in the debug build's `abiFilters`.
+* **Verification**: The corrected CI run assembled the APK and reported `adb install -r ... Success` on the x86_64 emulator.
+
+### 11. Maestro CLI Installer Flag Case
+* **Symptom**: The emulator installs the APK successfully but the workflow exits 127 with `maestro: not found`.
+* **Root Cause**: The installer used curl's uppercase `-F` form flag (`-FsSL`) instead of lowercase `-f` fail flag, so Maestro was never installed.
+* **Permanent Fix**: Use `curl -fsSL`, then verify the installed executable and print its version before adding its directory to `GITHUB_PATH`.
+* **Verification**: The workflow must pass the explicit executable/version check before reaching the emulator test step.
+
+### 12. Maestro Does Not Provide a `setFontScale` Flow Command
+* **Symptom**: Maestro rejects a flow with `Invalid Command: setFontScale` before running assertions.
+* **Root Cause**: Font scale is an Android system setting, not a supported Maestro flow command.
+* **Permanent Fix**: Set `system/font_scale` in the emulator runner script and restore `1.0` with an EXIT trap; keep the flow focused on layout assertions.
+* **Verification**: The flow parses under the installed Maestro CLI and the emulator script applies 2.0 before tests, restoring 1.0 on exit.
+
+### 13. Jetpack Compose `Modifier.testTag` Invisible to Maestro Without `testTagsAsResourceId = true`
+* **Symptom**: Maestro flows fail with `Assertion is false: id: <test_tag> is visible` (timing out after 30+ seconds), even though the app cold-launches cleanly without any crashes or errors in logcat.
+* **Root Cause**: In Jetpack Compose, `Modifier.testTag(...)` sets internal Compose Semantics (`SemanticsProperties.TestTag`). By default, Compose does NOT expose `testTag` as an Android `resource-id` / `viewIdResourceName` in the OS Accessibility hierarchy (`AccessibilityNodeInfo`). External test drivers (Maestro, UIAutomator, Accessibility Services) inspecting the view hierarchy by `id:` cannot see any Compose test tags.
+* **Permanent Fix**: Enable `testTagsAsResourceId = true` in the root Composable's semantics in `MainActivity.kt`:
+  ```kotlin
+  Surface(
+      modifier = Modifier
+          .fillMaxSize()
+          .semantics {
+              @OptIn(ExperimentalComposeUiApi::class)
+              testTagsAsResourceId = true
+          }
+  ) { ... }
+  ```
+  Also added static enforcement in `scripts/ci_maestro_doctor.py`.
+* **Verification**: `python scripts/ci_maestro_doctor.py` validates `testTagsAsResourceId = true` presence and 100% testTag resolution.
+

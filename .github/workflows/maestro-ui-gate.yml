@@ -1,0 +1,82 @@
+name: Maestro Live UI & Visual Quality Gate (On-Demand)
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: maestro-ui-gate-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  static-flow-audit:
+    name: Maestro Static Flow & TestTag Conformance
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run Maestro Flow Conformance Doctor
+        run: python scripts/ci_maestro_doctor.py
+
+  maestro-live-ui-test:
+    name: Headless ATD Emulator E2E & Visual Clash Gate
+    needs: static-flow-audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Install maestro-runner (Go Native Single Binary)
+        run: |
+          curl -fsSL https://open.devicelab.dev/install/maestro-runner | bash
+          test -x "$HOME/.maestro-runner/bin/maestro-runner" || true
+          echo "$HOME/.maestro-runner/bin" >> $GITHUB_PATH
+
+      - name: Assemble Debug APK
+        run: ./gradlew :app:assembleDebug --no-daemon --stacktrace
+
+      - name: Run Maestro Tests on Headless ATD Emulator (API 34)
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: aosp_atd
+          arch: x86_64
+          force-avd-creation: false
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: |
+            trap 'adb shell settings put system font_scale 1.0 >/dev/null 2>&1 || true' EXIT
+            adb install -r app/build/outputs/apk/debug/app-debug.apk
+            adb shell am start -n com.arh.terminal/.MainActivity
+            sleep 5
+            maestro-runner test .maestro/01_app_launch_and_theme_audit.yaml .maestro/02_session_connection_flow.yaml .maestro/03_hud_and_joypad_clash_audit.yaml || { adb logcat -d -t 500; exit 1; }
+            adb shell settings put system font_scale 2.0
+            maestro-runner test .maestro/04_font_scale_and_overflow_audit.yaml || { adb shell settings put system font_scale 1.0; adb logcat -d -t 500; exit 1; }
+            adb shell settings put system font_scale 1.0
+
+      - name: Upload Maestro Test Failure Artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: maestro-failure-artifacts
+          path: |
+            ~/.maestro/tests/
+            app/build/reports/

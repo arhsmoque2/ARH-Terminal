@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
     alias(libs.plugins.detekt)
+    alias(libs.plugins.roborazzi)
 }
 
 android {
@@ -21,7 +22,9 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         ndk {
-            abiFilters += listOf("arm64-v8a", "armeabi-v7a")
+            // The headless GitHub Actions emulator is x86_64; retain ARM
+            // variants for physical-device and ARM-emulator coverage.
+            abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86", "x86_64")
         }
     }
 
@@ -67,6 +70,7 @@ android {
     }
     testOptions {
         unitTests {
+            isIncludeAndroidResources = true
             isReturnDefaultValues = true
         }
     }
@@ -136,10 +140,15 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.mockk)
     testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.compose.ui.test.junit4)
+    testImplementation(libs.roborazzi)
+    testImplementation(libs.roborazzi.compose)
+    testImplementation(libs.roborazzi.junit.rule)
     testImplementation(libs.turbine)
     testImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     debugImplementation(libs.androidx.compose.ui.tooling)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
 }
