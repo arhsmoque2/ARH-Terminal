@@ -27,6 +27,8 @@ class SessionViewModelTest {
     private val relayClient: RelayWebSocketClient = mockk(relaxed = true)
     private val auditJournal: com.arh.terminal.data.audit.AgentAuditJournal = com.arh.terminal.data.audit.AgentAuditJournal()
     private val knownHostsStore: com.arh.terminal.data.security.KnownHostsStore = mockk(relaxed = true)
+    private val gitHubAuthManager: com.arh.terminal.data.github.GitHubAuthManager = mockk(relaxed = true)
+    private val gitHubClient: com.arh.terminal.data.github.GitHubClient = mockk(relaxed = true)
     private val context: android.content.Context = mockk(relaxed = true)
     private lateinit var viewModel: SessionViewModel
 
@@ -41,6 +43,8 @@ class SessionViewModelTest {
             relayClient,
             auditJournal,
             knownHostsStore,
+            gitHubAuthManager,
+            gitHubClient,
             context
         )
     }

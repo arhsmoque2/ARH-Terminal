@@ -11,6 +11,7 @@ import com.arh.terminal.data.audit.ConsentTier
 import com.arh.terminal.data.profiles.ConnectionProfile
 import com.arh.terminal.data.profiles.ProfileRepository
 import com.arh.terminal.ui.conversation.AgentTurn
+import com.arh.terminal.ui.workspace.StagedUploadItem
 import com.arh.terminal.util.NetworkMonitor
 import com.arh.terminal.util.SecretRedaction
 import com.pocketshell.core.agents.AgentKind
@@ -54,6 +55,8 @@ class SessionViewModel @Inject constructor(
     private val relayClient: RelayWebSocketClient,
     private val auditJournal: AgentAuditJournal,
     private val knownHostsStore: KnownHostsStore,
+    val gitHubAuthManager: com.arh.terminal.data.github.GitHubAuthManager,
+    val gitHubClient: com.arh.terminal.data.github.GitHubClient,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -76,15 +79,73 @@ class SessionViewModel @Inject constructor(
     private val pendingWriteArtifactsByPane = mutableMapOf<String, MutableMap<String, AgentArtifact>>()
     private val unclaimedArtifactsByPane = mutableMapOf<String, MutableList<AgentArtifact>>()
 
-    val gitHubAuthManager: com.arh.terminal.data.github.GitHubAuthManager = com.arh.terminal.data.github.GitHubAuthManager(context)
-    val gitHubClient: com.arh.terminal.data.github.GitHubClient = com.arh.terminal.data.github.GitHubClient(gitHubAuthManager)
-
     fun toggleRepoPickerModal(show: Boolean) {
         _uiState.update { it.copy(showRepoPickerModal = show) }
     }
 
     fun toggleTransferModal(show: Boolean) {
         _uiState.update { it.copy(showTransferModal = show) }
+    }
+
+    fun clearTransferStatusMessage() {
+        _uiState.update { it.copy(transferStatusMessage = null) }
+    }
+
+    /**
+     * Bug fix: WorkspaceTransferModal's confirm button used to just toast "Staged N items"
+     * and drop the staged files on the floor — nothing ever actually reached the host. This
+     * streams each staged file up over the active SSH session via SCP.
+     *
+     * Directories (from the "Pick Folder" tree picker) aren't uploaded here — SAF only hands
+     * back a tree URI, not a walkable file listing, and SshSession's upload surface is
+     * single-file streaming, so recursive folder upload is a separate feature. They're
+     * reported as skipped rather than silently dropped.
+     */
+    fun uploadStagedFiles(items: List<StagedUploadItem>, remoteDestinationPath: String) {
+        val ssh = activeSshSession
+        if (ssh == null) {
+            _uiState.update { it.copy(transferStatusMessage = "Not connected to host — nothing uploaded") }
+            return
+        }
+        if (items.isEmpty()) return
+
+        val remoteDir = remoteDestinationPath.trim().ifBlank { "~/uploads/" }.let {
+            if (it.endsWith("/")) it else "$it/"
+        }
+
+        viewModelScope.launch(Dispatchers.IO) {
+            var uploaded = 0
+            var failed = 0
+            var skippedDirs = 0
+
+            for (item in items) {
+                if (item.isDirectory) {
+                    skippedDirs++
+                    continue
+                }
+                try {
+                    val fileName = item.name.substringAfterLast('/')
+                    val remotePath = "$remoteDir$fileName"
+                    val opened = context.contentResolver.openInputStream(item.uri)
+                        ?: throw java.io.IOException("Could not open ${item.name}")
+                    opened.use { input ->
+                        ssh.uploadStream(input, item.sizeBytes, fileName, remotePath)
+                    }
+                    uploaded++
+                    auditJournal.recordAction("Workspace Transfer", "upload_file", "Uploaded $fileName to $remotePath", ConsentTier.MUTATIVE)
+                } catch (e: Exception) {
+                    failed++
+                    auditJournal.recordAction("Workspace Transfer", "upload_failed", "${item.name}: ${e.message}", ConsentTier.MUTATIVE)
+                }
+            }
+
+            val summary = buildString {
+                append("Uploaded $uploaded item${if (uploaded == 1) "" else "s"}")
+                if (failed > 0) append(", $failed failed")
+                if (skippedDirs > 0) append(", $skippedDirs folder${if (skippedDirs == 1) "" else "s"} skipped (not yet supported)")
+            }
+            _uiState.update { it.copy(transferStatusMessage = summary) }
+        }
     }
 
     fun selectArtifact(artifact: com.arh.terminal.data.artifacts.AgentArtifact?) {
@@ -271,6 +332,13 @@ class SessionViewModel @Inject constructor(
 
     fun attachTmux(sessionName: String) {
         val ssh = activeSshSession ?: return
+        // switchSession/createNewSession call this directly without an explicit detach in
+        // between, so close out whatever the previous attach was tracking here too — otherwise
+        // its panes' entries in pendingWriteArtifactsByPane/unclaimedArtifactsByPane never get
+        // reclaimed (see detachTmux for the same fix on the explicit-detach path).
+        activeTmuxClient?.close()
+        pendingWriteArtifactsByPane.clear()
+        unclaimedArtifactsByPane.clear()
         _uiState.update { it.copy(activeSessionName = sessionName, isAttached = true, showTmuxPicker = false) }
 
         viewModelScope.launch(Dispatchers.IO) {
@@ -291,6 +359,12 @@ class SessionViewModel @Inject constructor(
     fun detachTmux() {
         activeTmuxClient?.close()
         activeTmuxClient = null
+        // Bug fix: these per-pane maps are keyed by paneId and otherwise never shrink —
+        // panes from a detached session stay in them forever, growing unbounded across
+        // reconnects/session switches. Clear them here since a detach invalidates every
+        // pane the previous attach was tracking.
+        pendingWriteArtifactsByPane.clear()
+        unclaimedArtifactsByPane.clear()
         _uiState.update { it.copy(isAttached = false) }
         auditJournal.recordAction("psmux", "detach", "Detached from session ${_uiState.value.activeSessionName}", ConsentTier.READ_ONLY)
     }
