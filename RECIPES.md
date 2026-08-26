@@ -87,7 +87,55 @@ python scripts/remote_apk_builder.py --type release --verify --output-dir ./buil
 python scripts/remote_apk_builder.py --from-latest --type release --verify --output-dir ./build-outputs
 ```
 
-### 7. Run Maestro Live UI & Visual Clash Testing (Local & CI)
+### 7A. Run the Tier 1/2 UI Quality Gate (Robolectric + Roborazzi) — Primary, Blocking
+
+This is the **primary** UI quality gate as of ADR-009 — it runs on every push/PR in the `unit-tests-and-doctor`
+CI job, in-process, no emulator. Maestro (§7B below) is on-demand only.
+
+```powershell
+Set-Location 'D:\_ARH-AGENT-OS\_AGENT-WORKSPACE\projects\ARH-Terminal'
+
+# Tier 1: semantics-tree assertions (AppUiQualityGateTest) — blocking, always a real gate
+.\gradlew :app:testDebugUnitTest --tests "com.arh.terminal.ui.AppUiQualityGateTest"
+
+# Tier 2: Roborazzi screenshot capture (AppUiVisualRegressionTest) — currently capture-only,
+# see GOTCHAS.md #21 for why. Just running `testDebugUnitTest` captures images to
+# app/build/outputs/roborazzi/ without asserting anything.
+.\gradlew :app:testDebugUnitTest --tests "com.arh.terminal.ui.AppUiVisualRegressionTest"
+```
+
+**To turn Tier 2 into a real regression gate** (not yet done — no baselines are committed):
+```powershell
+# 1. Record baseline goldens from the current (known-good) UI state
+.\gradlew :app:recordRoborazziDebug
+# -> commit the resulting PNGs (default app/build/outputs/roborazzi/, or wherever
+#    `roborazzi { outputDir.set(...) }` points) into version control.
+
+# 2. From then on, verify against those goldens (fails on unintended visual drift)
+.\gradlew :app:testDebugUnitTest -Proborazzi.test.verify=true
+
+# Review a specific diff after a failure:
+.\gradlew :app:testDebugUnitTest -Proborazzi.test.compare=true
+# -> produces [original]_compare.png and a JSON diff under build/test-results/roborazzi
+```
+Once step 2 is adopted, add `-Proborazzi.test.verify=true` to the `Run Unit Tests with Timeout Ceiling`
+step in `.github/workflows/ci.yml` so CI enforces it too.
+
+**Adding a new Tier 1/2 test for a new screen or overlay component**: follow the pattern in
+`AppUiQualityGateTest.kt` / `AppUiVisualRegressionTest.kt` — `createComposeRule()` (not
+`createAndroidComposeRule`, no real Activity needed), mock every constructor dependency with
+`mockk(relaxed = true)` except the ones under test, `setContent { ARHTerminalTheme { ... } }`.
+For a real geometric "these two elements must not overlap" check (not just "both composed"),
+compare `composeTestRule.onNodeWithTag(tag).fetchSemanticsNode().boundsInRoot` rectangles directly
+— see `verifyJoypadAndQuickActionBarDoNotVisuallyClash` for a worked example.
+
+### 7B. Run Maestro Live UI & Visual Clash Testing (Local & On-Demand CI Only)
+
+Maestro is **not** run on every push/PR (see ADR-009) — it's scoped to `workflow_dispatch` in
+`maestro-ui-gate.yml`, reserved for scenarios that genuinely cross a real app/process boundary
+(a browser-based OAuth redirect, the system SAF file picker) where §7A's in-process Robolectric
+tests structurally can't reach. Read `GOTCHAS.md` #13–#21 before extending or re-enabling it —
+several non-obvious things went wrong getting it working the first time.
 
 #### A. Static Conformance Gate
 ```powershell

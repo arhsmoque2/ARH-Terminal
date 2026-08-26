@@ -88,4 +88,67 @@
   ```
   Also added static enforcement in `scripts/ci_maestro_doctor.py`.
 * **Verification**: `python scripts/ci_maestro_doctor.py` validates `testTagsAsResourceId = true` presence and 100% testTag resolution.
+* **Caveat that cost real time (see #16)**: this fix is necessary but was **not sufficient** on this codebase — after applying it, real CI runs where the Maestro driver started cleanly and the flows genuinely executed (1–1.5 min each, not an instant fail) still failed on the identical `id: ... is visible` assertions, for a reason never fully root-caused. Don't treat this fix alone as proof the flake is solved; verify against a run where the flows actually ran (see #18 for telling that apart from a driver-startup no-op).
+
+---
+
+## Lessons from Retiring the Maestro-Blocking CI Gate (PR #6)
+
+The gotchas below were all hit chasing down why 4 Maestro E2E flows kept failing in CI, across several distinct and unrelated root causes. The eventual resolution wasn't "fix Maestro harder" — it was recognizing that none of the 4 flows actually needed a real emulator or cross-app UI automation (they were all single-process Compose rendering checks), and replacing them with Robolectric + Compose UI Testing (blocking) and Roborazzi (non-blocking screenshot capture), demoting Maestro to on-demand (`workflow_dispatch`) for if/when a *genuine* cross-app scenario (an OAuth browser redirect, a system file picker) needs it. Full rationale in `ADR.md` (ADR-009). If you're standing up a similar Compose + emulator-based E2E CI gate, read #14–#21 before you start — most of this is generic to any Robolectric/Compose/Maestro-on-GitHub-Actions stack, not ARH-Terminal-specific.
+
+### 14. `reactivecircus/android-emulator-runner`'s Multi-Line `script:` Block Runs Each Line as a Separate `sh -c` Call
+* **Symptom**: A `script:` block like:
+  ```yaml
+  script: |
+    maestro test .maestro/ || {
+      adb logcat -d -t 500
+      exit 1
+    }
+  ```
+  fails with a shell syntax error (unclosed brace / unexpected EOF) even though the YAML/shell looks correct.
+* **Root Cause**: This action executes the `script:` input **one line at a time**, each as its own `sh -c "<line>"` invocation — not as a single multi-line script. A `{ ... }` block spanning multiple lines breaks because the opening `{` and its body land in separate shell invocations.
+* **Permanent Fix**: Collapse any `{ }` fallback/error-handling block onto a single line: `maestro test .maestro/ || { adb logcat -d -t 500; exit 1; }`.
+* **Verification**: The step executes past the `maestro test` line without a shell syntax error, whether it passes or fails on the actual test assertions.
+
+### 15. Wrong Activity Class Path in `adb shell am start -n`
+* **Symptom**: `adb shell am start -n com.example.app/.ui.MainActivity` fails silently or the app never actually launches, so every subsequent Maestro assertion times out waiting for a screen that never appeared.
+* **Root Cause**: The intent-component path has to match the actual manifest `android:name` and the class's real `package` declaration exactly — `.ui.MainActivity` is a plausible-looking guess if the class *feels* like it belongs under a `ui` package, but doesn't match where it actually lives.
+* **Permanent Fix**: Verify against the source of truth before trusting the CI script: `MainActivity.kt`'s `package` declaration and `AndroidManifest.xml`'s `<activity android:name="...">` entry must agree with the `-n` argument.
+* **Verification**: `adb shell am start -n <verified-path>` in the CI log actually returns a launch confirmation, and the very next assertion (even a trivial "is anything on screen" check) succeeds.
+
+### 16. Chasing a Real Bug Fix Doesn't Guarantee the Symptom Resolves — Verify Against a Run Where the Test Actually Executed
+* **Symptom**: A correct, well-diagnosed fix (see #13) is applied and CI still shows the exact same failure message on the next run — easy to misread as "the fix didn't work."
+* **Root Cause**: Two independent failure modes were stacked on top of each other: the accessibility-mapping bug (#13) *and* an unrelated CI driver-startup flake (#18) that made the very next run fail before the fix could even be exercised. The failure *message* looked identical in both cases (`Assertion is false: id: ... is visible`), but the *duration* of the failing flow told the real story — an instant (~3s) fail is the flow never running at all; a fail after 1+ minutes means it genuinely executed and asserted.
+* **Permanent Fix**: When investigating a stubborn CI test failure, use flow/test duration (and whether any output artifact was actually produced — #19) to distinguish "my fix didn't work" from "an unrelated infra issue prevented my fix from being tested at all," before concluding either way.
+* **Verification**: A CI run where the target flow's reported duration is consistent with real execution (not near-instant), and where a resulting report/artifact was actually produced.
+
+### 17. Never Pipe an Unfamiliar `curl | bash` Installer Into CI, Especially One With a Name Close to a Well-Known Tool
+* **Symptom**: Mid-debugging, a CI step is changed to install a differently-named tool (e.g. `maestro-runner` instead of `maestro`) via `curl -fsSL https://<unfamiliar-domain>/install/<tool> | bash`, and it either fails outright or silently behaves like a *different* product than intended.
+* **Root Cause**: The near-identical name invited treating it as a drop-in replacement without verifying what it actually was. In this case the installed tool provisioned a completely different automation stack (UIAutomator2/Appium-style) under the hood — not Maestro at all — and the install itself was an unauthenticated, unpinned (no checksum/signature) third-party script.
+* **Permanent Fix**: Don't substitute a CI dependency for an unfamiliar one under debugging pressure without checking: (a) is this a project you actually recognize/trust, (b) does its own output match what you expect it to be doing, (c) is there a checksum/signature you can pin. Revert immediately if any of those don't check out — a supply-chain risk is not worth the time saved. Prefer the original, well-known tool's official install source (e.g. `get.maestro.mobile.dev` for real Maestro) even when actively debugging why it's failing.
+* **Verification**: `grep` the CI workflow for every `curl | bash` (or equivalent) and confirm each one's domain and installed binary is the tool you actually intend.
+
+### 18. Maestro's Own Android Automation Driver Can Fail to Start Under Headless-Emulator Resource Contention
+* **Symptom**: `maestro test` fails almost immediately with `MaestroDriverStartupException$AndroidDriverTimeoutException: Maestro Android driver did not start up in time on emulator [ ... ] (driver port 42567)` — no flow assertion ever ran.
+* **Root Cause**: Maestro pushes and starts its own on-device automation service (bound to a local `adb forward`-ed port) before running any flow. On a resource-constrained headless CI runner, that service can fail to come up within Maestro's own startup timeout — independent of anything in the app or the flows. A tell-tale sign: the emulator's own boot time (from launch to install-ready) is also abnormally slow on that run (e.g. 6 min vs. the usual 1–2).
+* **Permanent Fix**: Treat this as infra flake, not an app/flow bug — re-run once (see the repo's PR-driving conventions on when a re-run is warranted) rather than immediately re-diagnosing app code. If it recurs frequently, consider a smaller/faster AVD image or fewer parallel CI jobs contending for the runner.
+* **Verification**: A re-run of the same commit either passes, or fails with a *different*, flow-specific error — either outcome confirms this run's failure wasn't caused by your last change.
+
+### 19. `actions/upload-artifact@v4` Needs `if-no-files-found: ignore` (or `warn`) for Directories That May Not Exist
+* **Symptom**: An upload-artifact step for a debug/screenshot output directory (e.g. `app/build/outputs/roborazzi/`) that may not exist on every run — either because the relevant tests didn't run, or a step upstream failed before producing it.
+* **Root Cause**: `upload-artifact@v4`'s default `if-no-files-found: warn` still logs a warning and (depending on other settings) can be noisy or, with `error`, fail the job outright for a legitimately-empty/absent path.
+* **Permanent Fix**: Set `if-no-files-found: ignore` on any artifact-upload step whose source directory is expected to sometimes be empty or absent by design (as opposed to a real build artifact that should always exist, like an APK).
+* **Verification**: A CI run where the underlying tests didn't produce that directory still completes the upload step cleanly (`No files were found... No artifacts will be uploaded.` in the log, not a failure).
+
+### 20. Compose UI Testing API Surface Isn't Fully Stable Across Compose BOM Versions — Prefer the Lower-Level Primitives
+* **Symptom**: `Unresolved reference 'assertDoesNotExist'` (or similarly, another `androidx.compose.ui.test.*` convenience extension) at compile time, despite `testImplementation(libs.androidx.compose.ui.test.junit4)` being present and other Compose UI Testing calls in the same file resolving fine.
+* **Root Cause**: Some convenience extension functions in the Compose UI Testing API have moved, been renamed, or aren't present in every BOM version's resolved artifact set. The BOM guarantees *compatible* versions across Compose artifacts, not that every convenience function is available everywhere it's used elsewhere in the ecosystem/documentation.
+* **Permanent Fix**: For "asserts nothing matches" checks, use the lower-level, long-stable primitive instead of the convenience wrapper: `composeTestRule.onAllNodesWithTag("...").fetchSemanticsNodes(atLeastOneRootRequired = false).isEmpty()` rather than `onNodeWithTag("...").assertDoesNotExist()`.
+* **Verification**: `./gradlew :app:testDebugUnitTest` (or equivalent) compiles and the assertion behaves correctly for both the present and absent case.
+
+### 21. Roborazzi's `captureRoboImage()` Captures Unconditionally by Default — It Isn't a Gate Until You Turn On Verify Mode
+* **Symptom**: A newly-added Roborazzi screenshot test always "passes" in CI, even when the rendered output has clearly changed or is wrong — it feels like the test isn't doing anything.
+* **Root Cause**: Without `-Proborazzi.test.record=true` or `-Proborazzi.test.verify=true` (as a Gradle property, either on the command line or in `gradle.properties`), `captureRoboImage()` just writes the current render to `build/outputs/roborazzi/` every run — no comparison against a previous baseline happens, so there's nothing to fail on.
+* **Permanent Fix**: This is a two-step rollout, not a one-shot add: (1) add the test and let it capture for a while / review the images manually or via the uploaded CI artifact; (2) once satisfied, run `./gradlew :app:recordRoborazziDebug` locally to commit baseline goldens (default `app/build/outputs/roborazzi/`, can be relocated via the `roborazzi { outputDir.set(...) }` DSL), then add `-Proborazzi.test.verify=true` to the CI test step so future runs actually fail on unintended visual drift.
+* **Verification**: After recording goldens and enabling verify mode, a deliberate visual change (e.g. a padding tweak) makes the CI run fail with a `[original]_compare.png` diff artifact — confirming the gate is live, not just capturing.
 
