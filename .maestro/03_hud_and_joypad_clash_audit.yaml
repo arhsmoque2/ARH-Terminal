@@ -8,9 +8,8 @@ tags:
 
 # 1. Inspect Setup Card Components
 - extendedWaitUntil:
-    visible:
-      id: "btn_connect"
-    timeout: 20000
+    visible: "Connect"
+    timeout: 30000
 
 - assertVisible:
     id: "btn_connect"

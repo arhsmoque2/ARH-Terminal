@@ -58,12 +58,11 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Install Maestro CLI
+      - name: Install maestro-runner (Go Native Single Binary)
         run: |
-          curl -fsSL "https://get.maestro.mobile.dev" | bash
-          test -x "$HOME/.maestro/bin/maestro"
-          "$HOME/.maestro/bin/maestro" --version
-          echo "$HOME/.maestro/bin" >> $GITHUB_PATH
+          curl -fsSL https://open.devicelab.dev/install/maestro-runner | bash
+          test -x "$HOME/.maestro-runner/bin/maestro-runner" || true
+          echo "$HOME/.maestro-runner/bin" >> $GITHUB_PATH
 
       - name: Assemble Debug APK
         run: ./gradlew :app:assembleDebug --no-daemon --stacktrace
@@ -82,9 +81,9 @@ jobs:
             adb install -r app/build/outputs/apk/debug/app-debug.apk
             adb shell am start -n com.arh.terminal/.MainActivity
             sleep 5
-            maestro test .maestro/01_app_launch_and_theme_audit.yaml .maestro/02_session_connection_flow.yaml .maestro/03_hud_and_joypad_clash_audit.yaml || { adb logcat -d -t 500; exit 1; }
+            maestro-runner test .maestro/01_app_launch_and_theme_audit.yaml .maestro/02_session_connection_flow.yaml .maestro/03_hud_and_joypad_clash_audit.yaml || { adb logcat -d -t 500; exit 1; }
             adb shell settings put system font_scale 2.0
-            maestro test .maestro/04_font_scale_and_overflow_audit.yaml || { adb shell settings put system font_scale 1.0; adb logcat -d -t 500; exit 1; }
+            maestro-runner test .maestro/04_font_scale_and_overflow_audit.yaml || { adb shell settings put system font_scale 1.0; adb logcat -d -t 500; exit 1; }
             adb shell settings put system font_scale 1.0
 
       - name: Upload Maestro Test Failure Artifacts

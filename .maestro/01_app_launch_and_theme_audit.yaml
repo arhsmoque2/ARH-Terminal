@@ -8,8 +8,7 @@ tags:
 
 # 1. Cold Launch & Header Inspection (Wait for Jetpack Compose first frame)
 - extendedWaitUntil:
-    visible:
-      id: "app_title"
+    visible: "ARH Terminal"
     timeout: 30000
 
 - assertVisible:

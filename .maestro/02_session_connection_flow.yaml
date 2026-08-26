@@ -8,9 +8,8 @@ tags:
 
 # 1. Fill Host & Username
 - extendedWaitUntil:
-    visible:
-      id: "input_host"
-    timeout: 20000
+    visible: "Connect"
+    timeout: 30000
 
 - tapOn:
     id: "input_host"

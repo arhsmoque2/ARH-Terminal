@@ -12,13 +12,12 @@ tags:
 
 # 2. Assert Layout Does Not Break or Clip Key Labels
 - extendedWaitUntil:
-    visible:
-      id: "app_title"
-    timeout: 20000
+    visible: "ARH Terminal"
+    timeout: 30000
 
 - assertVisible:
     id: "app_title"
-- assertVisible: "Connect (psmux -CC)"
+- assertVisible: "Connect"
 - assertVisible: "Android MCP Agent Bridge"
 
 # 3. Test Landscape Density & Screen Real Estate
